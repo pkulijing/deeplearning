@@ -1,0 +1,41 @@
+\ifx\PREAMBLE\undefined
+\input{preamble}
+\begin{document}
+\fi
+
+\chapter{Neural Networks and Deep Learning}
+\section{Logistic Regression}
+\subsection{Problem Definition}
+
+\begin{itemize}
+\item sigmoid function: 
+\[\sigma(z)=\frac{1}{1+e^{-z}} \sigma'(z)=\sigma(z)(1-\sigma(z))\]
+\item prediction
+\[\hat{y}^{(i)}=\sigma(\mathbf{w}^T\mathbf{x}^{(i)} + b)=P(y=1|x), 0 \le \hat{y} \le 1\]
+\item loss function
+\[L(\hat{y}^{(i)}, y^{(i)})=-\left(y^{(i)}log(\hat{y}^{(i)})+(1-y^{(i)})log(1-\hat{y}^{(i)})\right)\]
+\item cost function
+\begin{align*}
+J(\mathbf{w},b)&=\frac{1}{m}\displaystyle\sum_{i=1}^mL(\hat{y}^{(i)}, y^{(i)})\\
+&=-\frac{1}{m}\displaystyle\sum_{i=1}^{m}\left(y^{(i)}log(\hat{y}^{(i)})+(1-y^{(i)})log(1-\hat{y}^{(i)})\right)
+\end{align*}
+\end{itemize}
+
+\subsection{Gradient Descent}
+
+\begin{align*}
+z^{(i)} &= \mathbf{w}^T\mathbf{x}^{(i)}+b\\
+a^{(i)} &= \sigma(z^{(i)})\\
+J^{(i)} &= -\left(y^{(i)}log(a^{(i)})+(1-y^{(i)})log(1-a^{(i)})\right)
+\end{align*}
+
+\begin{align*}
+\frac{\partial J}{\partial a^{(i)}}&=-\frac{y}{a^{(i)}}+\frac{1-y^{(i)}}{1-a^{(i)}}\\
+\frac{\partial a^{(i)}}{\partial z^{(i)}}&=\sigma'(z^{(i)})=\sigma(z^{(i)})(1-\sigma(z^{(i)}))\\
+\frac{\partial z^{(i)}}{\partial w^{(i)}}&=x^{(i)}\\
+\frac{\partial ^{(i)}}{\partial b}&=1\\
+\end{align*}
+
+\ifx\PREAMBLE\undefined
+\end{document}
+\fi
