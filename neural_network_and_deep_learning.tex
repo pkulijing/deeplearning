@@ -92,8 +92,8 @@ L^{(i)} &= -\left(y^{(i)}\log(a^{(i)})+(1-y^{(i)})\log(1-a^{(i)})\right)
 \begin{itemize}
 \item $n_l$: number of neurons in layer $l$
 \item $n_l\times 1$ matrix $\mathbf{a}^{[l]}$: activation of layer $l$
-\item $n_l\times n_{l-1}$ matrix $\mathbf{W}$
-\item $n_l\times 1$ matrix $\mathbf{b}^{[l]}$
+\item $n_l\times n_{l-1}$ matrix $\mathbf{W}$: weights
+\item $n_l\times 1$ matrix $\mathbf{b}^{[l]}$: biases
 \end{itemize}
 \begin{empheq}[left=\empheqlbrace]{align*}
 \mathbf{a}^{[0]}&=\mathbf{x}\\
@@ -129,11 +129,42 @@ L^{(i)} &= -\left(y^{(i)}\log(a^{(i)})+(1-y^{(i)})\log(1-a^{(i)})\right)
 
 \subsection{Activation Functions}
 \begin{itemize}
-\item sigmoid function $a=\sigma(z)=\frac{1}{1+e^{-z}}$
-\item hyperbolic tangent function $a=\tanh(z)=\frac{e^z-e^{-z}}{e^z+e^{-z}}$
-\item ReLU(rectified linear unit) function: $a=Relu(z)=\max(0,z)$
-\item leaky ReLU function: $a=\max(0.01z, z)$
+\item sigmoid function
+\[a=\sigma(z)=\frac{1}{1+e^{-z}}, \frac{da}{dz}=a(1-a)\]
+$\tanh$ is usually a better choice except for the case of the output layer of binary classifier (output is 0 or 1).
+\item hyperbolic tangent function
+\[a=\tanh(z)=\frac{e^z-e^{-z}}{e^z+e^{-z}}, \frac{da}{dz}=1-a^2\]
+Almost always superior to sigmoid function because the mean of its output is closer to 0, so it centers the data better for the next layer.
+\item ReLU(rectified linear unit) function
+\[a=Relu(z)=\max(0,z), \frac{da}{dz}=\begin{cases}
+0, &z<0\\
+1, &z\ge 0\\
+\end{cases}\]
+Converges faster than sigmoid and $\tanh$ because its derivative is always 1 when $z>0$.
+\item leaky ReLU function
+\[a=\max(0.01z, z), \frac{da}{dz}=\begin{cases}
+  0.01, &z<0\\
+  1, &z\ge 0\\
+  \end{cases}\]
+Theoretically better than ReLU but is seldom used in practice.
+\item The activation function of an NN should be non-linear. A hidden layer with a linear activation function computes a linear combination of the inputs, making itself useless.
 \end{itemize}
+
+\subsection{Gradient Descent}
+If there are $n$ layers:
+\begin{empheq}[left=\empheqlbrace]{align*}
+\frac{\partial J}{\partial \mathbf{Z}^{[l]}}&=\begin{cases}
+W^{[l+1]\mathsf{T}}\frac{\partial J}{\partial \mathbf{Z}^{[l+1]}}*g^{[l]\prime}(\mathbf{Z}^{[l]}) &l<n\\
+\mathbf{A}^{[n]}-\mathbf{Y} &l=n\\
+\end{cases}\\
+\frac{\partial J}{\partial \mathbf{W}^{[l]}}&=\frac{1}{m}\frac{\partial J}{\partial \mathbf{Z}^{[l]}}\mathbf{A}^{[l-1]\mathsf{T}}\\
+\frac{\partial J}{\partial \mathbf{b}^{[l]}}&=\frac{1}{m}np.sum(\frac{\partial J}{\partial \mathbf{Z}^{[l]}}, axis=1)
+\end{empheq}
+
+\subsection{Random Intialization}
+In NN, if all weights are initialized to 0, neurons in the same hidden layer will always compute the same value. To avoid the problem, $W^{[l]}$ should be initialized randomly to small value (to guarantee fast convergence in case sigmoid or tanh is used as activation). $b^{[l]}$ does not have the problem and can be initialzied to 0.
+
+\section{Deep Neural Networks}
 
 \ifx\PREAMBLE\undefined
 \end{document}
