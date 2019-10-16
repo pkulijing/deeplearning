@@ -1,4 +1,4 @@
-LATEX=xelatex 
+LATEX=pdflatex 
 
 %:%.tex
 	$(LATEX) $<

@@ -5,36 +5,135 @@
 
 \chapter{Neural Networks and Deep Learning}
 \section{Logistic Regression}
-\subsection{Problem Definition}
+\subsection{Representation}
 
 \begin{itemize}
 \item sigmoid function: 
 \[\sigma(z)=\frac{1}{1+e^{-z}} \sigma'(z)=\sigma(z)(1-\sigma(z))\]
 \item prediction
-\[\hat{y}^{(i)}=\sigma(\mathbf{w}^T\mathbf{x}^{(i)} + b)=P(y=1|x), 0 \le \hat{y} \le 1\]
+\[\hat{y}^{(i)}=\sigma(\mathbf{w}^{\mathsf{T}}\mathbf{x}^{(i)} + b)=P(y=1|\mathbf{x}^{(i)}), 0 \le \hat{y} \le 1\]
 \item loss function
-\[L(\hat{y}^{(i)}, y^{(i)})=-\left(y^{(i)}log(\hat{y}^{(i)})+(1-y^{(i)})log(1-\hat{y}^{(i)})\right)\]
+\[L(\hat{y}^{(i)}, y^{(i)})=-\left(y^{(i)}\log(\hat{y}^{(i)})+(1-y^{(i)})\log(1-\hat{y}^{(i)})\right)\]
+
+reason: 
+\begin{align*}
+p(y|x)&=\begin{cases}
+\hat{y} & y=1\\
+1-\hat{y} & y=0
+\end{cases}
+=\hat{y}^y(1-\hat{y})^{(1-y)}\\
+\log(p(y|x))&=y\log\hat{y}+(1-y)\log(1-\hat{y})=-L(\hat{y}^{(i)}, y^{(i)})\\
+p(\mathbf{Y}|\mathbf{X})&=\displaystyle\prod_{i=1}^mp(y^{(i)}|x^{(i)})\\
+\log\left(p(\mathbf{Y}|\mathbf{X})\right)&=-\displaystyle\sum_{i=1}^mL(\hat{y}^{(i)}, y^{(i)})=-J
+\end{align*}
+
 \item cost function
 \begin{align*}
 J(\mathbf{w},b)&=\frac{1}{m}\displaystyle\sum_{i=1}^mL(\hat{y}^{(i)}, y^{(i)})\\
-&=-\frac{1}{m}\displaystyle\sum_{i=1}^{m}\left(y^{(i)}log(\hat{y}^{(i)})+(1-y^{(i)})log(1-\hat{y}^{(i)})\right)
+&=-\frac{1}{m}\displaystyle\sum_{i=1}^{m}\left(y^{(i)}\log(\hat{y}^{(i)})+(1-y^{(i)})\log(1-\hat{y}^{(i)})\right)
 \end{align*}
 \end{itemize}
 
 \subsection{Gradient Descent}
 
-\begin{align*}
-z^{(i)} &= \mathbf{w}^T\mathbf{x}^{(i)}+b\\
+\begin{empheq}[left=\empheqlbrace]{align*}
+z^{(i)} &= \mathbf{w}^{\mathsf{T}}\mathbf{x}^{(i)}+b\\
 a^{(i)} &= \sigma(z^{(i)})\\
-J^{(i)} &= -\left(y^{(i)}log(a^{(i)})+(1-y^{(i)})log(1-a^{(i)})\right)
-\end{align*}
+L^{(i)} &= -\left(y^{(i)}\log(a^{(i)})+(1-y^{(i)})\log(1-a^{(i)})\right)
+\end{empheq}
 
-\begin{align*}
-\frac{\partial J}{\partial a^{(i)}}&=-\frac{y}{a^{(i)}}+\frac{1-y^{(i)}}{1-a^{(i)}}\\
-\frac{\partial a^{(i)}}{\partial z^{(i)}}&=\sigma'(z^{(i)})=\sigma(z^{(i)})(1-\sigma(z^{(i)}))\\
-\frac{\partial z^{(i)}}{\partial w^{(i)}}&=x^{(i)}\\
-\frac{\partial ^{(i)}}{\partial b}&=1\\
-\end{align*}
+\begin{empheq}[left=\empheqlbrace]{align*}
+\frac{\partial L^{(i)}}{\partial a^{(i)}}&=-\frac{y^{(i)}}{a^{(i)}}+\frac{1-y^{(i)}}{1-a^{(i)}}\\
+\frac{\partial a^{(i)}}{\partial z^{(i)}}&=\sigma'(z^{(i)})=a^{(i)}(1-a^{(i)})\\
+\frac{\partial z^{(i)}}{\partial w_j}&=x_j^{(i)}, \frac{\partial z^{(i)}}{\partial b}=1\\
+\end{empheq}
+
+\begin{empheq}[left=\empheqlbrace]{align*}
+\frac{\partial L^{(i)}}{\partial z^{(i)}} &= a^{(i)} - y^{(i)}\\
+\frac{\partial L^{(i)}}{\partial w_j} &= x_j^{(i)}\left(a^{(i)}-y^{(i)}\right)\\
+\frac{\partial L^{(i)}}{\partial b} &= a^{(i)}-y^{(i)}
+\end{empheq}
+
+\begin{empheq}[left=\empheqlbrace]{align*}
+\frac{\partial J}{\partial w_j} &=\frac{1}{m}\displaystyle\sum_{i=1}^{m}\left[x_j^{(i)}(a^{(i)}-y^{(i)})\right]\\
+\frac{\partial J}{\partial b} &=\frac{1}{m}\displaystyle\sum_{i=1}^{m}\left[a^{(i)}-y^{(i)}\right]
+\end{empheq}
+
+\subsection{Vectorization}
+\begin{itemize}
+\item $n_x\times 1$ matrix $\mathbf{w}$
+\item $n_x\times m$ matrix $\mathbf{X}=\begin{bmatrix}
+  | & | &  & | \\
+  \mathbf{x}^{(1)} & \mathbf{x}^{(2)} & \cdots & \mathbf{x}^{(m)}\\
+  | & | &  & | \\
+\end{bmatrix}$
+\item $1\times m$ matrix $\mathbf{Y} = \begin{bmatrix}
+  y^{(1)} & y^{(2)} & \cdots & y^{(m)} 
+\end{bmatrix}$
+\item $1\times m$ matrix $\mathbf{b} = \begin{bmatrix}
+  b & b & \cdots & b
+\end{bmatrix}$
+\item $1\times m$ matrix $\mathbf{Z} = \begin{bmatrix}
+  z^{(1)} & z^{(2)} & \cdots & z^{(m)} 
+\end{bmatrix}=\mathbf{w}^{\mathsf{T}}\mathbf{X}+\mathbf{b}$
+\item $1\times m$ matrix $\mathbf{A} = \begin{bmatrix}
+  a^{(1)} & a^{(2)} & \cdots & a^{(m)} 
+\end{bmatrix}=\sigma(\mathbf{Z})$
+\end{itemize}
+
+\begin{empheq}[left=\empheqlbrace]{align*}
+\frac{\partial J}{\partial \mathbf{Z}}&=\mathbf{A}-\mathbf{Y}\\
+\frac{\partial J}{\partial \mathbf{w}} &=\frac{1}{m}\mathbf{X}(\mathbf{A}-\mathbf{Y})^{\mathsf{T}}\\
+\frac{\partial J}{\partial b} &=\frac{1}{m}np.sum(\mathbf{A}-\mathbf{Y})
+\end{empheq}
+
+\section{Shallow Neural Network}
+\subsection{Representation}
+\begin{itemize}
+\item $n_l$: number of neurons in layer $l$
+\item $n_l\times 1$ matrix $\mathbf{a}^{[l]}$: activation of layer $l$
+\item $n_l\times n_{l-1}$ matrix $\mathbf{W}$
+\item $n_l\times 1$ matrix $\mathbf{b}^{[l]}$
+\end{itemize}
+\begin{empheq}[left=\empheqlbrace]{align*}
+\mathbf{a}^{[0]}&=\mathbf{x}\\
+\mathbf{z}^{[1]}&=\mathbf{W}^{[1]}\mathbf{a}^{[0]}+\mathbf{b}^{[1]}, \mathbf{a}^{[1]}=\sigma(\mathbf{z^{[1]}})\\
+\cdots\\
+\mathbf{z}^{[l]}&=\mathbf{W}^{[l]}\mathbf{a}^{[l-1]}+\mathbf{b}^{[l]}, \mathbf{a}^{[l]}=\sigma(\mathbf{z^{[l]}})\\
+\end{empheq}
+\subsection{Vectorization}
+\begin{itemize}
+  \item $n_x\times m$ matrix $\mathbf{X}=\begin{bmatrix}
+    | & | &  & | \\
+    \mathbf{x}^{(1)} & \mathbf{x}^{(2)} & \cdots & \mathbf{x}^{(m)}\\
+    | & | &  & | \\
+  \end{bmatrix}$
+  \item $n_l\times m$ matrix $\mathbf{A}^{[l]}=\begin{bmatrix}
+    | & | &  & | \\
+    \mathbf{a}^{[l](1)} & \mathbf{a}^{[l](2)} & \cdots & \mathbf{a}^{[l](m)}\\
+    | & | &  & | \\
+  \end{bmatrix}$
+  \item $n_l\times m$ matrix $\mathbf{Z}^{[l]}=\begin{bmatrix}
+    | & | &  & | \\
+    \mathbf{z}^{[l](1)} & \mathbf{z}^{[l](2)} & \cdots & \mathbf{z}^{[l](m)}\\
+    | & | &  & | \\
+  \end{bmatrix}$
+  \item $\mathbf{b}^{[l]}$ will be broadcasted to $n_l\times m$
+\end{itemize}
+\begin{empheq}[left=\empheqlbrace]{align*}
+\mathbf{A}^{[0]}&=\mathbf{X}\\
+\mathbf{Z}^{[1]}&=\mathbf{W}^{[1]}\mathbf{A}^{[0]}+\mathbf{b}^{[1]}, \mathbf{A}^{[1]}=\sigma(\mathbf{Z^{[1]}})\\
+\cdots\\
+\mathbf{Z}^{[l]}&=\mathbf{W}^{[l]}\mathbf{A}^{[l-1]}+\mathbf{b}^{[l]}, \mathbf{A}^{[l]}=\sigma(\mathbf{Z^{[l]}})\\
+\end{empheq}
+
+\subsection{Activation Functions}
+\begin{itemize}
+\item sigmoid function $a=\sigma(z)=\frac{1}{1+e^{-z}}$
+\item hyperbolic tangent function $a=\tanh(z)=\frac{e^z-e^{-z}}{e^z+e^{-z}}$
+\item ReLU(rectified linear unit) function: $a=Relu(z)=\max(0,z)$
+\item leaky ReLU function: $a=\max(0.01z, z)$
+\end{itemize}
 
 \ifx\PREAMBLE\undefined
 \end{document}
