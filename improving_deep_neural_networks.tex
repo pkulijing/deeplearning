@@ -1,0 +1,49 @@
+\ifx\PREAMBLE\undefined
+\input{preamble}
+\begin{document}
+\fi
+\chapter{Improving Deep Neural Networks}
+\section{Machine Learning Application Setup}
+\subsection{Train/Dev/Test Sets}
+\begin{itemize}
+  \item Applying ML to practical problems is a highly iterative problem. Hyper parameters can only be obtained by looping through: idea $\Rightarrow$ code $\Rightarrow$ experiment.
+  \item Data should be divided into training set, hold-out cross validation set (dev set) and testing set. For small dataset(size $<10^6$): 60/20/20. For large dataset(size > $10^6$): 98/1/1(i.e. most data in training set). Build a model on training set $\Rightarrow$ optimize hyper parameters on dev set $\Rightarrow$ evaluate model on testing set. 
+  \item It should be guaranteed that dev set and testing set come from the same distribution.
+  \item Sometimes it's ok not to have a testing set (no model evaluation)
+\end{itemize}
+\subsection{Bias and Variance}
+\begin{itemize}
+  \item High bias: underfitting. High variance: overfitting
+  \item Tell bias \& variance from errors:
+    \begin{itemize}
+      \item low train error$(1\%)$ \& high dev error$(15\%)$: high variance
+      \item high train error$(15\%)$ \& high dev error$(15\%)$: high bias
+      \item high train error$(15\%)$ \& higher dev error$(15\%)$: high bias \& high variance
+      \item low train error$(1\%)$ \& low dev error$(1\%)$: best situation 
+    \end{itemize}
+  \item The above method is based on the fact that human can solve the problem perfectly with 0\% error. If the intrinsic complexity of the problem causes non-zero human error, it should be used as the baseline. 
+  \item Solution to high bias: bigger NN(more neurons in each layer, more layers), try different model suitable for the dataset, run the algorithm longer (more iterations), advanced Optimization methods, etc
+  \item Solution to high variance: obtain more data, regularization, try different model suitabloe for the dataset, etc
+  \item Bigger NN never hurts
+\end{itemize}
+\section{Regularization}
+Adding regularization to NN helps to reduce overfitting (high variance)
+\subsection{L2 Regularization}
+\begin{itemize}
+  \item L2 norm is called Frobenius norm
+  \item L1 regularization makes the model sparse (i.e. many 0 in $\mathbf{w}$. L2 regularization of logistic regression is often used:
+  \[\mathcal{J}(\mathbf{w},b)=\frac{1}{m}\displaystyle\sum_{i=1}^m\mathcal{L}(\hat{y}^{(i)}, y^{(i)})+\frac{\lambda}{2m}\vert\vert\mathbf{w}\vert\vert^2_2\] 
+  \item L2 regularization of NN: 
+  \[\mathcal{J}(\mathbf{W}^{[1]},\mathbf{b}^{[1]},\cdots,\mathbf{W}^{[L]},\mathbf{b}^{[L]})=\frac{1}{m}\displaystyle\sum_{i=1}^m\mathcal{L}(\hat{y}^{(i)}, y^{(i)})+\frac{\lambda}{2m}\displaystyle\sum_{i=1}^L\vert\vert\mathbf{W}^{[l]}\vert\vert^2_F\] 
+  \item Back propagation \& parameter update of NN with L2 regularization
+  \begin{align*}
+  \frac{\partial \mathcal{J}}{\partial \mathbf{W}^{[l]}}&=\textbf{Result without regularization}+\frac{\lambda}{m}\mathbf{W}^{[l]}\\
+  \mathbf{W}^{[l]}&\coloneqq\left(1-\frac{\alpha\lambda}{m}\right)\mathbf{W}^{[l]}-\alpha(\textbf{Result without regularization})\\
+  \end{align*}
+  Obviously the norm of the weights shrink at each iteration, called weight decay. 
+\end{itemize}
+\subsection{Dropout Regularization}
+\section{Optimization Problem Setup}
+\ifx\PREAMBLE\undefined
+\end{document}
+\fi
