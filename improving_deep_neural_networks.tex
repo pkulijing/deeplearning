@@ -43,7 +43,47 @@ Adding regularization to NN helps to reduce overfitting (high variance)
   Obviously the norm of the weights shrink at each iteration, called weight decay. 
 \end{itemize}
 \subsection{Dropout Regularization}
+\begin{itemize}
+  \item Dropout regularization eliminates some neurons randomly in each iteration.
+  \item Inverted dropout: for the activation $a^{[l]}$ of layer $l$, construct a vector $d^{[l]}$:
+  \begin{align*}
+    d^{[l]}&=np.random.rand(*a^{[l]}.shape) < keep_prob\\
+    a^{[l]}&=(a^{[l]} * d^{[l]}) / keep_prob
+  \end{align*}
+  $a^{[l]}$ must be divided by $keep_prob$ to ensure its expectation remains the same as that without dropout.
+  \item $d^{[l]}$ is used for both forward and backward propagation. It's different for each iteration and for each training example.
+  \item Dropout is not used at test time to avoiding adding noise to predictions. 
+\end{itemize}
+\subsection{Other Regularization Methods}
+\begin{itemize}
+  \item data augmentation: flip images horizontally / vertically, random distortion / rotation to digits and letters, etc
+  \item early stopping: plot train error and dev error against number of iterations, stop before dev error starts to increase. disadvantage: trying to minimize train error \& avoid overfitting at the same time, which is against orthogonalization approach.
+\end{itemize}
 \section{Optimization Problem Setup}
+\subsection{Normalize Input}
+Normalizing inputs speeds up the training process. $x\rightarrow \frac{x - \mu}{\sigma}$. Normalizing should be applied to the train, dev, test sets, using mean and variance of the training set.
+\subsection{Vanishing / Exploding Gradients}
+Vanishing / Exploding gradients tend to occur when the network is very deep. Activations increase / decrease exponentially as a function of $l$. It can be solved by careful choice of initial weights.
+\subsection{Weight Initialization}
+\begin{itemize}
+\item when the number of inputs $n$ is large, weights $w_i$ should be small to avoid explosion. 
+\item He initialization: for ReLU activation, initialize weights with 
+\[w=np.random.randn(\textbf{required shape})*\sqrt{\frac{2}{n}}\]
+to guarantee that $var(w_i)=\frac{2}{n}$. If $\tanh$ is used instead of ReLU, the coefficient should be $\sqrt{\frac{1}{n}}$.
+\end{itemize}
+\subsection{Gradient Check}
+\begin{itemize}
+  \item Purpose: verify correctness of back propagation implementation
+  \item Approximation: \[f'(\theta)=\displaystyle\lim_{\epsilon\rightarrow 0}\frac{f(\theta+\epsilon)-f(\theta-\epsilon)}{2\epsilon}=\frac{f(\theta+\epsilon)-f(\theta-\epsilon)}{2\epsilon}+O(\epsilon^2)\]
+  \item Process: reshape all parameters $W^{[l]}, b^{[l]}$ into one big vector $\theta$, canculate $d\theta$ and $d\theta_{approx}$, then calculate
+  \[\delta=\frac{\vert\vert d\theta-d\theta_{approx}\vert\vert}{\vert\vert d\theta\vert\vert+\vert\vert d\theta_{approx}\vert\vert}\]
+  \begin{itemize}
+    \item $\delta\sim 1e^{-7}$: likely correct
+    \item $\delta\sim 1e^{-5}$: ok but needs close inspection: singular big value in $d\theta-d\theta_{approx}$
+    \item $\delta\sim 1e^{-3}$: probably buggy 
+  \end{itemize}
+  \item Use gradient only for debugging. Do not use for general training. 
+\end{itemize}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
