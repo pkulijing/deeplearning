@@ -82,7 +82,90 @@ to guarantee that $var(w_i)=\frac{2}{n}$. If $\tanh$ is used instead of ReLU, th
     \item $\delta\sim 1e^{-5}$: ok but needs close inspection: singular big value in $d\theta-d\theta_{approx}$
     \item $\delta\sim 1e^{-3}$: probably buggy 
   \end{itemize}
-  \item Use gradient only for debugging. Do not use for general training. 
+  \item Use gradient checking only for debugging. Do not use for general training. 
+\end{itemize}
+\section{Optimization Algorithms}
+\subsection{Mini-Batch Gradient Descent}
+\begin{itemize}
+\item When the training set is large: divide training set into smaller mini-batches to accelerate. $n_b$ is the size of a mini-batch, and thus we have $m/{n_b}$ mini-batches.
+\begin{align*}
+  \mathbf{X}&=\left[x^{(1)}, x^{(2)}, \cdots, x^{(m)}\right]=\left[\mathbf{X}^{\{1\}}, \mathbf{X}^{\{2\}}, \cdots, \mathbf{X}^{\{\frac{m}{n_b}\}}\right]\\
+  \mathbf{Y}&=\left[y^{(1)}, y^{(2)}, \cdots, y^{(m)}\right]=\left[\mathbf{Y}^{\{1\}}, \mathbf{Y}^{\{2\}}, \cdots, \mathbf{Y}^{\{\frac{m}{n_b}\}}\right]
+\end{align*}
+\item In each iteration (called an epoch in mini-batch scenario), we do forward and backward propagation with a single mini-batch $\left\{\mathbf{X}^{\{t\}}, \mathbf{Y}^{\{t\}}\right\}$, and calculate its cost:
+\[\mathcal{J}^{\{t\}}=\frac{1}{n_b}\displaystyle\sum_{i=1}^{n_b}\mathcal{L}\left(\hat{y}^{(i)},y^{(i)}\right)+\frac{\lambda}{2n_b}\vert\vert\mathbf{W}\vert\vert^2_F\]
+\item With batch gradient descent, the cost should decrease after each iteration. But with mini-batch gradient descent, $\mathcal{J}^{\{t\}}$ will have some oscillations.
+\item Mini-batch size
+  \begin{itemize}
+    \item size $m$ : degrades to batch gradient descent
+    \item size 1 : stochastic gradient descent. Loses speed of vectorization
+    \item Some value in between usually works
+    \item In practice, use power of 2 (64, 128, 256, 512) to align with machine memory hierarchy.
+  \end{itemize}
+\end{itemize}
+\subsection{Gradient Descent with Momentum}
+\subsubsection{Exponentially Weighted Averages}
+\begin{align*}
+  v_0 &= 0\\
+  v_t&=\beta v_{t-1}+(1-\beta)\theta_t=\left(1-\beta\right)\displaystyle\sum_{i=0}^{t-1}\beta^{i}\theta_{t-i}
+\end{align*}
+\begin{itemize}
+  \item $\displaystyle\lim_{\beta\rightarrow 1^-}\beta^{\frac{1}{1-\beta}}=\displaystyle\lim_{\epsilon\rightarrow 0^+}(1-\epsilon)^{\frac{1}{\epsilon}}=\frac{1}{e}\approx 0.37$, so $v_t$ can be viewed as average of the $\frac{1}{1-\beta}$ values ($0<\beta<1$) before $\theta_t$.
+  \item Small $\beta$: more oscillations. Large $\beta$: fewer oscillations, moves to the right
+  \item Implementation: only needs memory for one row $v_t$ 
+  \item Bias correction: $v_t$ value is small in the initial iterations. Solution: use corrected value 
+  \[v_t^{c}=\frac{v_t}{1-\beta^t}\]
+  When $t$ is small, the correction coefficient is large; when $t$ gets larger, it converges to 1. Since the bias of $v_t$ vanishes after the initial iterations, it's okay not to implement bias correction.
+\end{itemize}
+\subsubsection{Gradient Descent with Momentum}
+\begin{itemize}
+  \item One sentence: calculate exponentially weighted average of gradients and use it to update parameters. 
+  \item Initialization: $v_{d\mathbf{W}}=v_{d\mathbf{b}}=0$
+  \item In iteration $t$:
+  \begin{align*}
+    v_{d\mathbf{W}}&=\beta v_{d\mathbf{W}}+(1-\beta)d\mathbf{W}, v_{d\mathbf{b}}=\beta v_{d\mathbf{b}}+(1-\beta)d\mathbf{b}\\
+    \mathbf{W}&=\mathbf{W}-\alpha v_{d\mathbf{W}}, \mathbf{b}=\mathbf{b}-\alpha v_{d\mathbf{b}}
+  \end{align*}
+  \item Oscillations of gradients average out, thus the gradient descent takes a more straightforward path towards the minimum.
+  \item $\beta$ is a new hyper parameter. 0.9 usually works fine.
+\end{itemize}
+\subsection{RMSProp}
+\begin{itemize}
+  \item RMSProp means Root Mean Squared Prop.
+  \item Initialization: $S_{d\mathbf{W}}=S_{d\mathbf{b}}=0$
+  \item In each iteration:
+  \begin{align*}
+    S_{d\mathbf{W}}&=\beta S_{d\mathbf{W}}+(1-\beta)d\mathbf{W}^2, S_{d\mathbf{b}}=\beta S_{d\mathbf{b}}+(1-\beta)d\mathbf{b}^2\\
+    \mathbf{W}&=\mathbf{W}-\alpha \frac{d\mathbf{W}}{\sqrt{S_{d\mathbf{W}}} + \epsilon}, \mathbf{b}=\mathbf{b}-\alpha \frac{d\mathbf{b}}{\sqrt{S_{d\mathbf{b}}} + \epsilon}
+  \end{align*}
+  \item Along directions in which derivatives are large, $S$ is large, thus oscillations along these directions are damped out. Vice-vesa.
+  \item $\epsilon$ is added to handle the case in which $S$ is nearly 0. 
+\end{itemize}
+\subsection{Adam Optimization}
+\begin{itemize}
+  \item Momentum + RMSProp. Adam means Adaptive Moment Estimation
+  \item Initialization: $S_{d\mathbf{W}}=S_{d\mathbf{b}}=v_{d\mathbf{W}}=v_{d\mathbf{b}}=0$
+  \item In each iteration:
+  \begin{align*}
+    v_{d\mathbf{W}}&=\beta_1 v_{d\mathbf{W}}+(1-\beta_1)d\mathbf{W}, v_{d\mathbf{b}}=\beta_1 v_{d\mathbf{b}}+(1-\beta_1)d\mathbf{b}\\
+    S_{d\mathbf{W}}&=\beta_2 S_{d\mathbf{W}}+(1-\beta_2)d\mathbf{W}^2, S_{d\mathbf{b}}=\beta_2 S_{d\mathbf{b}}+(1-\beta_2)d\mathbf{b}^2\\
+    v_{d\mathbf{W}}^{c}&=\frac{v_{d\mathbf{W}}}{1-\beta_1^{t}}, v_{d\mathbf{b}}^{c}=\frac{v_{d\mathbf{b}}}{1-\beta_1^{t}}\\
+    S_{d\mathbf{W}}^{c}&=\frac{v_{d\mathbf{W}}}{1-\beta_2^{t}}, S_{d\mathbf{b}}^{c}=\frac{v_{d\mathbf{b}}}{1-\beta_2^{t}}\\
+    \mathbf{W}&=\mathbf{W}-\alpha \frac{v_{d\mathbf{W}}^{c}}{\sqrt{S_{d\mathbf{W}}^c} + \epsilon}, \mathbf{b}=\mathbf{b}-\alpha \frac{v_{d\mathbf{b}}^{c}}{\sqrt{S_{d\mathbf{b}}^c} + \epsilon}
+  \end{align*}
+  \item Hyper parameter choice: $\alpha$ needs to be tuned. $\beta_1=0.9$ for first order moment $d\mathbf{W}$, $\beta_2=0.999$ for second order moment $d\mathbf{W}^2$, $\epsilon=10^{-8}$
+\end{itemize}
+\subsection{Learning Rate Decay}
+\begin{itemize}
+  \item If a fixed learning rate is used, gradient descent tend not to converge quickly at the proximity of the minimum.
+  \item A decaying learning rate can make gradient descent converge faster:
+  \[\alpha=\frac{1}{1+\textbf{decay rate * epoch num}}\alpha_0\]
+  \item Other decay methods: exponential decay, $\alpha=\frac{k}{\sqrt{t}}\alpha_0$, discrete staircase, manual decay, etc
+\end{itemize}
+\subsection{Local Optima Problem}
+\begin{itemize}
+  \item In 2 dimension, it seems easy for gradient descent to reach a local optima. But in deep learning, since the dimension of the problem is quite large, it's rare to reach a local optima. Most points with 0 derivatives are saddle points.
+  \item Plateaus can make deep learning slow. Sophisticated optimization algorithms such as Adam should be used to accelerate learning.
 \end{itemize}
 \ifx\PREAMBLE\undefined
 \end{document}
