@@ -167,6 +167,36 @@ to guarantee that $var(w_i)=\frac{2}{n}$. If $\tanh$ is used instead of ReLU, th
   \item In 2 dimension, it seems easy for gradient descent to reach a local optima. But in deep learning, since the dimension of the problem is quite large, it's rare to reach a local optima. Most points with 0 derivatives are saddle points.
   \item Plateaus can make deep learning slow. Sophisticated optimization algorithms such as Adam should be used to accelerate learning.
 \end{itemize}
+\section{Batch Normalization}
+\begin{itemize}
+  \item Batch normalization has the following effects:
+  \begin{itemize}
+    \item Makes learning of later layers easier because it prevents activations of earlier layers from shifting around (covariante shift) by limitting their means and variances. 
+    \item Slight regularization effect: each mini-batch is scaled by the mean and variance computed on just that mini-batch, adding noise to the activation of that layer (similar to dropout). 
+  \end{itemize}
+  \item Test time: at train time, $\pmb{\mu}^{[l]}$ and $\pmb{\sigma}^{2[l]}$ are calculated for each mini-batch. At test time, we use the exponentially weighted average of $\pmb{\mu}^{[l]\{i\}}$ and $\pmb{\sigma}^{2[l]\{i\}}$ for $\pmb{\mu}^{[l]}$ and $\pmb{\sigma}^{2[l]}$ respectively.
+\end{itemize}
+\section{Multi-Class Classification: Softmax Regression}
+\begin{itemize}
+  \item Logistic regression deals with claasification problem with 2 possible classes. Softmax regression deals with multi-class classification of $C$ classes. It generalizes logistic regression to $C$ classes.
+  \item Output layer (called softmax layer) has $C$ units. Output $\hat{y}_i$ represents the probability of the input falling into the $i^{th}$ class:
+  \[\hat{\mathbf{y}}_i=P\left(\text{class i}\vert \mathbf{x}\right)\] Activation function:
+    \[\mathbf{Z}^{[L]}=\mathbf{w}^{[L]}\mathbf{a}^{[L-1]}+\mathbf{b}^{[L]},\mathbf{t}=e^{\mathbf{Z}^{[L]}},\hat{\mathbf{y}}=\mathbf{a}^{[L]}=\frac{\mathbf{t}}{\vert\vert\mathbf{t}\vert\vert_{L1}}\]
+  \item Loss function \& cost function:
+  \begin{align*}
+    \mathcal{L}\left(\hat{\mathbf{y}},\mathbf{y}\right)&=-\mathbf{y}*\log{\hat{\mathbf{y}}}=-\displaystyle\sum_{j=1}^{C}y_j\log{\hat{y}_j}\\
+    \mathcal{J}\left(\mathbf{w}, \mathbf{b}, \cdots\right)&=\frac{1}{m}\displaystyle\sum_{i=1}^m\mathcal{L}\left(\hat{\mathbf{y}}^{(i)},\mathbf{y}^{(i)}\right)\\
+    \frac{\partial \mathcal{J}}{\partial \mathbf{Z}^{[L]}}&=\hat{\mathbf{y}}-\mathbf{y}
+  \end{align*}
+  \begin{proof}
+    Denote $\vert\vert\mathbf{t}\vert\vert_{L1}$ as $T$.
+    \begin{align*}
+    \frac{\partial \mathcal{L}}{\partial \hat{y}_j}&=-\frac{y_j}{\hat{y}_j}\\
+    \frac{\partial \hat{y}_i}{\partial \mathbf{Z}^{[L]}_i}&=\frac{e^{\mathbf{Z}_j}\delta_{ij}T-e^{\mathbf{Z}_j}e^{\mathbf{Z}_i}}{T^2}=\hat{y}_j\delta_{ij}-\hat{y}_j\hat{y}_i\\
+    \frac{\partial \mathcal{L}}{\partial \mathbf{Z}^{[L]}_i}&=\displaystyle\sum_{j}\frac{\partial \mathcal{L}}{\partial \hat{y}_j}\frac{\partial \hat{y}_i}{\partial \mathbf{Z}^{[L]}_i}=-\displaystyle\sum_{j}y_j(\delta_{ij}-\hat{y}_i)=-y_i+\hat{y}_i
+    \end{align*}
+  \end{proof}
+\end{itemize}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
