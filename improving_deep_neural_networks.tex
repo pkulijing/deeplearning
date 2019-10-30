@@ -159,7 +159,7 @@ to guarantee that $var(w_i)=\frac{2}{n}$. If $\tanh$ is used instead of ReLU, th
 \begin{itemize}
   \item If a fixed learning rate is used, gradient descent tend not to converge quickly at the proximity of the minimum.
   \item A decaying learning rate can make gradient descent converge faster:
-  \[\alpha=\frac{1}{1+\textbf{decay rate * epoch num}}\alpha_0\]
+  \[\alpha=\frac{1}{1+\text{decay rate * epoch num}}\alpha_0\]
   \item Other decay methods: exponential decay, $\alpha=\frac{k}{\sqrt{t}}\alpha_0$, discrete staircase, manual decay, etc
 \end{itemize}
 \subsection{Local Optima Problem}
@@ -167,8 +167,54 @@ to guarantee that $var(w_i)=\frac{2}{n}$. If $\tanh$ is used instead of ReLU, th
   \item In 2 dimension, it seems easy for gradient descent to reach a local optima. But in deep learning, since the dimension of the problem is quite large, it's rare to reach a local optima. Most points with 0 derivatives are saddle points.
   \item Plateaus can make deep learning slow. Sophisticated optimization algorithms such as Adam should be used to accelerate learning.
 \end{itemize}
+\section{Hyperparameter Tuning}
+\begin{itemize}
+  \item Order of tuning suggested by Andrew
+    \begin{enumerate} 
+      \item learning rate $\alpha$
+      \item momentum term $\beta$, \#hidden units, \#minimum batch size 
+      \item \#layers, learning rate decay
+      \item Adam optimization parameters $\beta_1, \beta_2, \epsilon$(almost never tune them)
+  \end{enumerate}
+  \item Value selection
+    \begin{itemize}
+      \item Don't use a grid. Some parameters may be much more important than others. Random sampling ensures that more values of the important parameters are tried.
+      \item Use coarse-to-fine search: after doing a coarse sampling on the whole sampling space, focus on the most promising region and do a fine sampling.
+    \end{itemize}
+  \item Use appropriate scale to pick hyperparameters: random selection doesn't always work.
+    \begin{itemize}
+      \item When sampling learning rate $\alpha$ between $0.00001\sim 1$, logarithmic scale should be used.
+      \item When sampling hyperparameters for exponentially weighted averages: use logarithmic scale for $1-\beta$
+    \end{itemize}
+  \item Intuitions that work in one domain does not necessarily work in another domain: NLP, CV, speech, Ads, logistics, etc.
+  \item Different approaches to Hyperparameter tuning
+    \begin{itemize}
+      \item ``Panda'': when computing resource is limited: babysitting one model
+      \item ``Caviar'': when computing resource is adequate: train many models in parallel
+    \end{itemize}
+\end{itemize}
 \section{Batch Normalization}
 \begin{itemize}
+  \item Input normalization accelerates training. Batch normalization applies normalization to activations in all layers.
+  \item Debate over whether $Z$ or $A$ should be normalized: Andrew suggests $Z$ in practice
+  \item For layer $l$:
+  \begin{align*}
+    \pmb{\mu}&=\frac{1}{m}\displaystyle\sum_{i=1}^m\mathbf{Z}^{(i)}\\
+    \pmb{\sigma}^2&=\frac{1}{m}\displaystyle\sum_{i=1}^m\left(\mathbf{Z}^{(i)}-\pmb{\mu}\right)^2\\
+    \mathbf{Z}^{(i)}_{norm}&=\frac{\mathbf{Z}^{(i)}-\pmb{\mu}}{\sqrt{\pmb{\sigma}^2+\pmb{\epsilon}}}\\
+    \mathbf{\tilde{Z}}^{(i)}&=\pmb{\gamma}*\mathbf{Z}^{(i)}_{norm}+\pmb{\beta}
+  \end{align*}
+  in which $\pmb{\gamma}, \pmb{\beta}$ are learnable parameters of the model. They allow the mean and variance of $\mathbf{\tilde{Z}}^{(i)}$ being set to any value wanted. When $\beta=\mu$ and $\gamma=\sqrt{\sigma^2+\epsilon}$, $\mathbf{\tilde{Z}}^{(i)}=\mathbf{Z}^{(i)}$. $\epsilon$ is added to handle the case in which $\sigma=0$.
+  \item For a deep network:
+  \begin{align*}
+  \mathbf{X}&\xrightarrow{\mathbf{w}^{[1]}, b^{[1]}}\mathbf{Z^{[1]}}\xrightarrow[\text{batch norm}]{\pmb{\gamma}^{[1]},\pmb{\beta}^{[1]}}\mathbf{\tilde{Z}}^{[1]}\rightarrow \mathbf{a}^{[1]}=g^{[1]}\left(\mathbf{\tilde{Z}}^{[1]}\right)\\
+  &\xrightarrow{\mathbf{w}^{[2]}, b^{[2]}}\mathbf{Z^{[2]}}\xrightarrow[\text{batch norm}]{\pmb{\gamma}^{[2]},\pmb{\beta}^{[2]}}\mathbf{\tilde{Z}}^{[2]}\rightarrow \mathbf{a}^{[2]}=g^{[2]}\left(\mathbf{\tilde{Z}}^{[2]}\right)\\
+  &\cdots\\
+  &\xrightarrow{\mathbf{w}^{[l]}, b^{[l]}}\mathbf{Z^{[l]}}\xrightarrow[\text{batch norm}]{\pmb{\gamma}^{[l]},\pmb{\beta}^{[l]}}\mathbf{\tilde{Z}}^{[l]}\rightarrow \mathbf{a}^{[l]}=g^{[l]}\left(\mathbf{\tilde{Z}}^{[l]}\right)\\
+  &\cdots
+  \end{align*}
+  \item In practice, batch normalization usually works with mini batches instead of the whole training set.
+  \item Parameters: $\mathbf{w}^{[l]}, \pmb{\beta}^{[l]}, \pmb{\gamma}^{[l]}$. $\mathbf{b}^{[l]}$ can be eliminated (i.e. constantly set to 0) because it gets subtracted during batch normalization.
   \item Batch normalization has the following effects:
   \begin{itemize}
     \item Makes learning of later layers easier because it prevents activations of earlier layers from shifting around (covariante shift) by limitting their means and variances. 
