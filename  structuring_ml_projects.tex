@@ -1,0 +1,52 @@
+\ifx\PREAMBLE\undefined
+\input{preamble}
+\begin{document}
+\fi
+\chapter{Structuring Machine Learning Projects}
+\section{Introduction to ML Strategy}
+A lot of options are available when it comes to improving the performance of a ML model:
+\begin{itemize}
+  \item Collect more data
+  \item Collect more diverse training set
+  \item Train algorithm longer with gradient descent
+  \item Try Adam instead of gradient descent
+  \item Add L2 / dropout regularization
+  \item Change network architecture: activation function, \# hidden units, bigger / smaller network
+\end{itemize}
+Machine Learning strategy helps to find the most promising direction to proceed.
+\subsection{Orthogonalization}
+Chain of assumptions in ML:
+\begin{enumerate}
+  \item Fit training set well on cost function (human level performance): bigger network; better optimization algorithm
+  \item Fit dev set well on cost function: regularization; bigger train set
+  \item Fit test set well on cost function: bigger dev set
+  \item Perform well in real world: change dev set; change cost function
+\end{enumerate}
+If the model's performance is not ideal in one stage, there exists specific approaches to take for better performance of that stage.
+
+Early stopping is a strategy against the orthogonalization principle: it trys to ameliorate the performance on both the train set and dev set at the same time.
+\subsection{Goal Setup}
+\subsubsection{Single Number Evaluation Metric}
+Use appropriate metrics that can be expressed by a single number for easier tuning.
+
+Precision $P$ \& recall $R$ $\rightarrow$ F1 score = $\frac{2}{1/P+1/R}=\frac{2PR}{P+R}$
+\subsubsection{Satisficing \& Optimizing Metrics}
+\begin{itemize}
+  \item optimizing metric: a metric to optimize as well as possible
+  \item satisficing metric: a metric that is acceptable as long as some limit is satisfied
+\end{itemize}
+e.g. 
+\begin{itemize}
+  \item For cat recognization: accuracy is optimizing metric, while running time is satisficing metric (as long as $<100ms$, it is acceptable)
+  \item Waking word of smart speaker: accuracy is optimizing metric, while false positive frequency is satisficing metric (at most 1 each day).
+\end{itemize}
+\subsubsection{Train/Dev/Test Set Setup}
+\begin{itemize}
+  \item Distribution: choose dev \& test set to reflect real world data. Make sure they come from the same distribution.
+  \item Size: test set should be big enough to give high confidence in the overall performance of the system. 70/30 or 60/20/20 for small dataset, 98/1/1 for big dataset.
+\end{itemize}
+\subsubsection{When to Change}
+If doing well with metric + dev/set data does not lead to good real world performance, consider to change the metric and/or dev/test set.
+\ifx\PREAMBLE\undefined
+\end{document}
+\fi
