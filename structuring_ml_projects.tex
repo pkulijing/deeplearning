@@ -3,7 +3,6 @@
 \begin{document}
 \fi
 \chapter{Structuring Machine Learning Projects}
-\section{Introduction to ML Strategy}
 A lot of options are available when it comes to improving the performance of a ML model:
 \begin{itemize}
   \item Collect more data
@@ -14,7 +13,7 @@ A lot of options are available when it comes to improving the performance of a M
   \item Change network architecture: activation function, \# hidden units, bigger / smaller network
 \end{itemize}
 Machine Learning strategy helps to find the most promising direction to proceed.
-\subsection{Orthogonalization}
+\section{Orthogonalization}
 Chain of assumptions in ML:
 \begin{enumerate}
   \item Fit training set well on cost function (human level performance): bigger network; better optimization algorithm
@@ -25,12 +24,12 @@ Chain of assumptions in ML:
 If the model's performance is not ideal in one stage, there exists specific approaches to take for better performance of that stage.
 
 Early stopping is a strategy against the orthogonalization principle: it trys to ameliorate the performance on both the train set and dev set at the same time.
-\subsection{Goal Setup}
-\subsubsection{Single Number Evaluation Metric}
+\section{Goal Setup}
+\subsection{Single Number Evaluation Metric}
 Use appropriate metrics that can be expressed by a single number for easier tuning.
 
 Precision $P$ \& recall $R$ $\rightarrow$ F1 score = $\frac{2}{1/P+1/R}=\frac{2PR}{P+R}$
-\subsubsection{Satisficing \& Optimizing Metrics}
+\subsection{Satisficing \& Optimizing Metrics}
 \begin{itemize}
   \item optimizing metric: a metric to optimize as well as possible
   \item satisficing metric: a metric that is acceptable as long as some limit is satisfied
@@ -40,27 +39,27 @@ e.g.
   \item For cat recognization: accuracy is optimizing metric, while running time is satisficing metric (as long as $<100ms$, it is acceptable)
   \item Waking word of smart speaker: accuracy is optimizing metric, while false positive frequency is satisficing metric (at most 1 each day).
 \end{itemize}
-\subsubsection{Train/Dev/Test Set Setup}
+\subsection{Train/Dev/Test Set Setup}
 \begin{itemize}
   \item Distribution: choose dev \& test set to reflect real world data. Make sure they come from the same distribution.
   \item Size: test set should be big enough to give high confidence in the overall performance of the system. 70/30 or 60/20/20 for small dataset, 98/1/1 for big dataset.
 \end{itemize}
-\subsubsection{When to Change}
+\subsection{When to Change}
 If doing well with metric + dev/set data does not lead to good real world performance, consider to change the metric and/or dev/test set. For example, apply extra weight to a certain type of prediction error that is absolutely inteloratable:
 \[\frac{1}{m_{dev}}\displaystyle\sum_{i=1}^{m_{dev}}\mathbf{1}\left(y^{(i)}_{pred}\neq y^{(i)}\right)\Rightarrow\frac{1}{\sum_{i=1}^{m_{dev}}w_i}\displaystyle\sum_{i=1}^{m_{dev}}w_i\mathbf{1}\left(y^{(i)}_{pred}\neq y^{(i)}\right)\]
-\subsection{Human-Level Performance}
-\subsubsection{Why Human-level Performance}
+\section{Human-Level Performance}
+\subsection{Why Human-level Performance}
 We would like to compare our model with human-level performance because humans are quite good at a lot of tasks. When our ML model is worse than humans, we can 
 \begin{itemize}
   \item Get labeled data from humans
   \item Gain insight from manual error analysis: why did a person get this right?
   \item Better analysis of bias / variance
 \end{itemize}
-\subsubsection{Avoidable Bias}
+\subsection{Avoidable Bias}
 Human-level performance can often be used as a good estimation of Bayes Optimal Error, which is the theoretically best possible error one can achieve. The difference between the train error and human-level performance is called the avoidable bias. When the gap is large, we diagnose the model as having high bias and should try to reduce the train error. Whereas when this gap is small and the gap between the train error and the dev error is relatively large, we should try to reduce the dev error to reduce variance.
 
 People with professional background tend to do better at certain tasks. Even better results can be achieved by collective work of a group of such professionals. Human-level performance of a task should take the value the best achievable result so that it can be viewed as a good estimation of the Bayes optimal error to guide our development.
-\subsubsection{Surpassing Human-Level Performance}
+\subsection{Surpassing Human-Level Performance}
 ML significantly surpasses human-level performance when it comes to dealing with large amounts of structured data:
 \begin{itemize}
 \item Online advertising
@@ -74,7 +73,7 @@ Recently, ML is even reported to behave better than human at some tasks in which
   \item some computer vision tasks
   \item medical applications: ECG, skin cancer diagnosis
 \end{itemize}
-\subsubsection{Improving Model Performance}
+\subsection{Improving Model Performance}
 Fundamental assumptions of supervised learning:
 \begin{itemize}
   \item The training set can be fitted really well: reduce avoidable bias
@@ -83,6 +82,71 @@ Fundamental assumptions of supervised learning:
 The gap between human-level and the training error indicates the avoidable bias. Possible approaches to reduce it: train a bigger model; train longer; use better algorithms; try different NN architectures; hyperparameter search; etc.
 
 The gap between the training error and the dev error indicates the variance. Possible approaches to reduce it: get more data; regularization(L2, dropout, data augmentation); try different NN archiitectures; etc.
+\section{Error Analysis}
+Guideline for ML application development: build the first system quickly and iterate.
+  \begin{itemize}
+    \item Set up train/dev/test set and metric
+    \item Build the initial system quickly
+    \item Use bias/variance analysis and error analysis to prioritize next steps.
+  \end{itemize}
+\subsection{Error Analysis of Dev \& Test Set}
+Error analysis refers to the process of manually examining mistakes made by an algorithm whose performance is not as good as that of a human in order to obtain insights on improving it. Muiltiple types of errors can be examined in parallel. Take the cat recognition problem as an example:
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{c|cccp{50pt}}
+    Image & Dog & Giant Cats & Blurry & Comments \\\hline
+    1 & $\checkmark$ & & & pitbull \\
+    2 &  & & $\checkmark$ &  \\
+    3 & & $\checkmark$ & $\checkmark$ & rainy day, \newline leopard \\
+    $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ \\
+    sum & 9\% & 43\% & 61\% \\
+  \end{tabular}
+\end{table}
+
+In the example above, efforts made to improve performance on giant cat images and blurry images are promising, whereas working on dog images is not likely to contribute a lot.
+\subsection{Incorrectly Labeled Data}
+\begin{itemize}
+  \item DL algorithms are quite robust against random errors in the training set. Leaving the errors untouched probably won't harm the performance.
+  \item Systematic errors in the training set will cause problem.
+  \item For errors in dev \& test set, add a column during error analysis denoting incorrect labels. If such error is significant in comparison with the overall dev set error, it's worthwhile to fix it.
+  \item Apply the same process to dev \& test set to ensure that they still come from the same distribution.
+  \item Examine examples that our algorithm got right as well as those it got wrong.
+  \item Train and dev/test sets may follow slightly different distributions after the correction on dev/test sets.
+\end{itemize}
+\section{Mismatched Train and Dev/Test Set}
+\subsection{Train/Dev/Test Sets Setup}
+Example: cat recognition again. Easy-to-obtain data contains images downloaded from the internet with high resolution, while in the real world users will use images uploaded from their mobile phone with low resolution.
+\begin{itemize}
+  \item Option 1: mix all data and divide it into train/dev/test sets. 
+  \begin{itemize}
+    \item Pro: all 3 sets follow the same distribution
+    \item Con: only a tiny portion of the dev/test set reflects real world data.
+  \end{itemize}
+  \item Option 2: dev/test sets contain only mobile images; the rest of all images form the training set
+  \begin{itemize}
+    \item Pro: dev/test sets reflect real world data
+    \item Con: training distribution is different from dev/test distribution
+  \end{itemize}
+  \item Option 2 is superior in the long run. Accepting a different training distribution from the dev/test distribution often makes much more data available, resulting in a better algorithm. But the dev/test sets should always reflect real world data.
+\end{itemize}
+\subsection{Bias \& Variance Analysis}
+When training distribution is different from dev/test distribution, the gap between training error and dev error is no longer an approriate indicator of the variance of the model, because it could be caused by two reasons:
+\begin{itemize}
+  \item The model is overfit to the training set and fails to generalize well, i.e. high variance causes model failure.
+  \item The difference between the training distribution and the dev/test set is too big, i.e. data dismatch causes model failure.
+\end{itemize}
+Solution: slice a small part of the training set as the training-dev set and measure the variance of the model according to the gap between the training error and the training-dev error. (Do not use the training-dev set in the training process.)
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{lcl}
+  Human Level Performance & $\xleftrightarrow{\text{avoidable bias}}$ & Training Error \\
+  Training Error & $\xleftrightarrow{\text{variance}}$ & Training-Dev Error \\
+  Training-Dev Error & $\xleftrightarrow{\text{data mismatch}}$ & Dev Error \\
+  Dev Error & $\xleftrightarrow{\text{dev set overfit}}$ & Test Error
+  \end{tabular}
+\end{table}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
