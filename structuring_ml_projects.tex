@@ -94,7 +94,7 @@ Error analysis refers to the process of manually examining mistakes made by an a
 
 \begin{table}[ht]
   \centering
-  \begin{tabular}{c|cccp{50pt}}
+  \begin{tabular}{c|cccc}
     Image & Dog & Giant Cats & Blurry & Comments \\\hline
     1 & $\checkmark$ & & & pitbull \\
     2 &  & & $\checkmark$ &  \\
@@ -147,6 +147,59 @@ Solution: slice a small part of the training set as the training-dev set and mea
   Dev Error & $\xleftrightarrow{\text{dev set overfit}}$ & Test Error
   \end{tabular}
 \end{table}
+
+A more general formulation of the reasoning:
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{m{80pt}|m{70pt}m{120pt}}
+    & General data & Data in a sub-domain \\\hline
+    Human level & Human level\newline performance & Human level performance \newline in sub-domain\\\hline
+    Error on trained\newline examples & training error & training error in \newline sub-domain\\\hline
+    Error on not \newline trained examples & training-dev \newline error & dev/test Error
+  \end{tabular}
+\end{table}
+\subsection{Addressing Data Mismatch}
+\begin{itemize}
+\item Carry out manual error analysis to try to understand the difference between training and dev/test sets.
+\item Make training data more similar to dev/test set, or collect more data similar to dev/test set.
+\begin{itemize}
+  \item Artificial data synthesis: can work very well but risks overfitting to a subset of the example space.
+\end{itemize}
+\end{itemize}
+\section{Learning from Multiple Tasks}
+\subsection{Transfer Learning}
+\begin{itemize}
+  \item Transfer learning: apply knowledge learned by NN in task $A$ to another task $B$. e.g.
+  \begin{itemize}
+    \item image recognition $\rightarrow$ radiology diagnosis
+    \item speech recognition $\rightarrow$ smart speaker trigger work detection
+  \end{itemize}
+  \item Operation: delete output layer of the NN obtained in task $A$, add a new output layer for task $B$ and retrain the network. When dataset size is small, retrain only the output layer; when dataset size is large, the whole network can be retrained. In the latter case, training process of $A$ is called pre-training, while that of $B$ is called fine-tuning.
+  \item Transfer learning $A\rightarrow B$ makes sense when:
+  \begin{itemize}
+    \item Task $A,B$ have the same input.
+    \item A lot more data for $A$ is available than for $B$.
+    \item Low level features from $A$ can be helpful for learning $B$.
+  \end{itemize}
+  If the conditions are not satisfied, transfer learning is not likely to help a lot. 
+\end{itemize}
+\subsection{Multi-task Learning}
+\begin{itemize}
+  \item Multi-task learning: make one NN simutaneously complete multiple tasks, with each task hopefully helps all other tasks. 
+  \begin{itemize}
+    \item e.g. an autonomous driving perception application that tries to simutaneously recognize pedestrians, vehicles, stop signs, traffic lights, etc.
+  \end{itemize}
+  \item Multi-task training makes sense when:
+  \begin{itemize}
+    \item training on a set of tasks that can benefit from having shared low-level features.
+    \item amount of data for each task is quite similar (usually)
+    \item a big NN can be trained to complete all the tasks
+  \end{itemize}
+  \item In practice, transfer leaning is used much more often than multi-task learning.
+\end{itemize}
+\section{End-to-end Deep Learning}
+
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
