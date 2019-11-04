@@ -199,7 +199,22 @@ A more general formulation of the reasoning:
   \item In practice, transfer leaning is used much more often than multi-task learning.
 \end{itemize}
 \section{End-to-end Deep Learning}
-
+\begin{itemize}
+  \item E2E DL: replace multiple stages in data processing systems with a single big NN
+  \begin{itemize}
+    \item e.g. speech recognition: audio $\rightarrow$ \{ features $\rightarrow$ phonemes $\rightarrow$ words $\rightarrow$ \} transcript
+  \end{itemize}
+  \item Pros:
+  \begin{itemize}
+    \item Let the data speak
+    \item Less hand-designing of components needed
+  \end{itemize}
+  \item Cons:
+  \begin{itemize}
+    \item Needs large amounts of data (when data is not sufficient, e2e DL is less promising than multi-stage DL.)
+    \item Excludes potentially useful hand-designed components
+  \end{itemize}
+\end{itemize}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
