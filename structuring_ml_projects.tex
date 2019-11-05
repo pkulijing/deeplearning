@@ -190,6 +190,9 @@ A more general formulation of the reasoning:
   \begin{itemize}
     \item e.g. an autonomous driving perception application that tries to simutaneously recognize pedestrians, vehicles, stop signs, traffic lights, etc.
   \end{itemize}
+  \item Cost function:
+  \[\mathcal{J}=\frac{1}{m}\displaystyle\sum_{i=1}^m\displaystyle\sum_{j=1}^k\mathcal{L}\left(\hat{y}^{(i)}_k-y^{(i)}_k\right)\]
+  in which $k$ is the number of tasks, i.e. $\hat{y}$ has dimension ($k$, 1). It's different from softmax regression because each example has multiple labels associated to it.
   \item Multi-task training makes sense when:
   \begin{itemize}
     \item training on a set of tasks that can benefit from having shared low-level features.
