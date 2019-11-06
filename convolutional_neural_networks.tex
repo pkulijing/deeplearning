@@ -11,9 +11,9 @@ Computer vision is developping rapidly thans to deep learning. It also provides 
 \end{itemize}
 One of the biggest challenges of applying DL in CV is its big input size: for a 1000$\times$1000 image, the input size is 3M, if the 1st layer contains 1000 hidden units, then $W^{[1]}$ will have 3B elements, which makes it hard not to overfit, and also requires more hardware resources for training. The solution is the convolutional operation.
 \section{Convolutional Operation}
-Convolutional operation\footnote{In mathematical textbooks, the filter should be flipped ($F^f_{ij}=F_{m-1-i, n-1-j}$)before the operation above. The convolutional operation in DL is called cross-correlation in math context. The flipping makes the operation assosiative.}: with $m\times n$ matrix $A$ and $f\times f$ matrix $F$ (kernel, or filter), we define their convolution $C$ as follows:
-    \[C_{ij}=\left(A*F\right)_{ij}=\displaystyle\sum_{p=0}^{f-1}\displaystyle\sum_{q=0}^{f-1}A_{i+p,j+q}*F_{pq}, \left(0\le i\le m-f, 0\le j\le n-f\right)\]
-obviously $C$ is a $m-f+1\times n-f+1$ matrix.
+Convolutional operation\footnote{In mathematical textbooks, the filter should be flipped ($F^f_{ij}=F_{m-1-i, n-1-j}$)before the operation above. The convolutional operation in DL is called cross-correlation in math context. The flipping makes the operation assosiative.}: with $n_H\times n_W$ matrix $A$ and $f\times f$ matrix $F$ (kernel, or filter), we define their convolution $C$ as follows:
+    \[C_{ij}=\left(A*F\right)_{ij}=\displaystyle\sum_{p=0}^{f-1}\displaystyle\sum_{q=0}^{f-1}A_{i+p,j+q}*F_{pq}, \left(0\le i\le n_H-f, 0\le j\le n_W-f\right)\]
+obviously $C$ is a $n_H-f+1\times n_W-f+1$ matrix.
 \subsection{Edge Detection}
 \begin{itemize}
   \item Vertical edge detection kernel:
@@ -50,31 +50,53 @@ obviously $C$ is a $m-f+1\times n-f+1$ matrix.
     \item Image shrinks after convolution operations.
     \item Corner pixels are used only once; edge pixels are used only 2-3 times; etc
   \end{itemize} 
-  \item Solution: padding around the image border ($m\times n\rightarrow m+1\times n+1$). The value of the padded pixels is usually 0. The number of rows / columns to pad is called padding amound $p$.
+  \item Solution: padding around the image border ($n_H\times n_W\rightarrow n_H+1\times n_W+1$). The value of the padded pixels is usually 0. The number of rows / columns to pad is called padding amound $p$.
   \item Valid padding: no padding. image shrinks by $f-1$ pixels along both sides for an $f\times f$ filter. 
   \item Same padding: pad around the border so that image size remains the same.
   \[n+2p-f+1=n\Rightarrow p=\frac{f-1}{2}\]
   In CV, $f$ is usually odd, so that no asymmetric padding is needed, and there exists a ``center'' position of the filter.
 \end{itemize}
 \subsection{Strided Convolutions}
-Strided convolutional operation: with $m\times n$ matrix $A$ and $f\times f$ matrix $F$ (kernel, or filter), we define their strided convolution $C$ with stride $s$ as follows:
+Strided convolutional operation: with $n_H\times n_W$ matrix $A$ and $f\times f$ matrix $F$ (kernel, or filter), we define their strided convolution $C$ with stride $s$ as follows:
 \begin{align*}
   C_{ij}&=\left(A*_sF\right)_{ij}=\displaystyle\sum_{p=0}^{f-1}\displaystyle\sum_{q=0}^{f-1}A_{s*i+p,s*j+q}*F_{pq}\\
-  0&\le i\le \left\lfloor\frac{m-f}{s}\right\rfloor, 0\le j\le \left\lfloor\frac{n-f}{s}\right\rfloor
+  0&\le i\le \left\lfloor\frac{n_H-f}{s}\right\rfloor, 0\le j\le \left\lfloor\frac{n_W-f}{s}\right\rfloor
 \end{align*}
-Considering padding, $C$ is a $\left\lfloor\frac{m+2p-f}{s}\right\rfloor+1\times\left\lfloor\frac{n+2p-f}{s}\right\rfloor+1$ matrix.
+Considering padding, $C$ is a $\left\lfloor\frac{n_H+2p-f}{s}\right\rfloor+1\times\left\lfloor\frac{n_W+2p-f}{s}\right\rfloor+1$ matrix.
 \subsection{Convolution Over Volumes}
 \begin{itemize}
   \item An image is usually more than a 2D matrix. An RGB image has 3 channels, while an RGBA image has 4 channels. 
   \item The number of channels $n_c$ (also called depth) calls for the addition of another dimension to both the image and the filter.
   \begin{align*}
     C_{ij}&=\left(A*F\right)_{ij}=\displaystyle\sum_{p=0}^{f-1}\displaystyle\sum_{q=0}^{f-1}\displaystyle\sum_{r=0}^{n_c-1}A_{i+p,j+q,k}*F_{pqk}\\
-    0&\le i\le m-f, 0\le j\le n-f
+    0&\le i\le n_H-f, 0\le j\le n_W-f
   \end{align*}
   Note that the output is still a 2D matrix.
   \item Multiple filters can be applied at the same time so that the output is also a volume. e.g. this can be used to detect edges along both vertical and horizontal directions.
 \end{itemize}
 \section{One Layer of CNN}
+\begin{itemize}
+  \item Operation: convolve the image with a few filters of the same size, add bias items to the output images, then apply non-linear activation. With input image $A$ of size $n_H\times n_W\times n_c$, $n_f$ filters $F_i$ of size $f\times f\times n_c$, we have:
+  \begin{align*}
+    Z^{[1]}_i&=A*F_i + b_i\\
+    A^{[1]}&=Relu\left(Z^{[1]}\right)
+  \end{align*}
+  $Z^{[1]}, A^{[1]}$ are of size $n_H-f+1\times n_W-f+1\times n_f$.
+  \item In comparison with normal NN: $W^{[1]}\sim F^{[1]}$
+  \item Number of parameters in a layer: $n_f\left(n_cf^2 + 1\right)$ (+1 item is for the bias item), which is much smaller than the number of image pixels, making CNN less prone to overfitting.
+  \item Take padding and stride into consideration, for layer $l$: 
+  \begin{itemize}
+      \item filter size: $f^{[l]}\times f^{[l]}\times n_c^{[l-1]}$
+      \item activations: $m\times n_H^{[l]}\times n_W^{[l]}\times n_c^{[l]}$
+      \item weights: $f^{[l]}\times f^{[l]}\times n_c^{[l-1]}\times n_c^{[l]}$
+      \item bias: $1\times 1\times 1\times n_c^{[l]}$
+      \item input: $n_H^{[l-1]}\times n_W^{[l-1]}\times n_c^{[l-1]}$
+      \item output: $n_H^{[l]}\times n_W^{[l]}\times n_c^{[l]}$
+  \end{itemize}
+  The relationship between $n^{[l]}_{H/W}$ and $n^{[l-1]}_{H/W}$ is:
+  \[n^{[l]}_{H/W}=\left\lfloor\frac{n^{[l-1]}_{H/W}+2p^{[l]}-f^{[l]}}{s^{[l]}}+1\right\rfloor\]
+  Notation $n_f$ is abandoned because $n_f^{[l]}=n_c^{[l]}$.
+\end{itemize}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
