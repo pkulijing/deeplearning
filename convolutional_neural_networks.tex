@@ -74,7 +74,7 @@ Considering padding, $C$ is a $\left\lfloor\frac{n_H+2p-f}{s}\right\rfloor+1\tim
   Note that the output is still a 2D matrix.
   \item Multiple filters can be applied at the same time so that the output is also a volume. e.g. this can be used to detect edges along both vertical and horizontal directions.
 \end{itemize}
-\section{One Layer of CNN}
+\section{Convolution Layers}
 \begin{itemize}
   \item Operation: convolve the image with a few filters of the same size, add bias items to the output images, then apply non-linear activation. With input image $A$ of size $n_H\times n_W\times n_c$, $n_f$ filters $F_i$ of size $f\times f\times n_c$, we have:
   \begin{align*}
@@ -94,9 +94,75 @@ Considering padding, $C$ is a $\left\lfloor\frac{n_H+2p-f}{s}\right\rfloor+1\tim
       \item output: $n_H^{[l]}\times n_W^{[l]}\times n_c^{[l]}$
   \end{itemize}
   The relationship between $n^{[l]}_{H/W}$ and $n^{[l-1]}_{H/W}$ is:
-  \[n^{[l]}_{H/W}=\left\lfloor\frac{n^{[l-1]}_{H/W}+2p^{[l]}-f^{[l]}}{s^{[l]}}+1\right\rfloor\]
+  \[n^{[l]}_{H/W}=\left\lfloor\frac{n^{[l-1]}_{H/W}+2p^{[l]}-f^{[l]}}{s^{[l]}}\right\rfloor+1\]
   Notation $n_f$ is abandoned because $n_f^{[l]}=n_c^{[l]}$.
+  \item A simple CNN as an example:
+  \begin{align*}
+    39\times 39\times 3&\xrightarrow[10\text{ filters}]{f^{[1]}=3,s^{[1]}=1,p^{[1]}=0}37\times 37\times 10\\
+    &\xrightarrow[20\text{ filters}]{f^{[2]}=5,s^{[2]}=3,p^{[2]}=0}17\times 17\times 20\\
+    &\xrightarrow[40\text{ filters}]{f^{[3]}=5,s^{[3]}=2,p^{[3]}=0}7\times 7\times 40\\
+    &\xrightarrow{\text{unroll}}1960\text{ vector}\xrightarrow{\text{logistic/softmax}}\hat{y}
+  \end{align*}
+  Typical trend accross layers: image size decreases ($n_H, n_W$), number of channels increases ($n_c$).
 \end{itemize}
+\section{Pooling Layers}
+\begin{itemize}
+  \item Max pooling operation: select the maximum item within the filter
+  \begin{align*}
+    \begin{bmatrix}
+      1 & 3 & 2 & 1 & 3\\ 
+      2 & 9 & 1 & 1 & 5\\
+      1 & 3 & 2 & 3 & 2\\
+      8 & 3 & 5 & 1 & 0\\
+      5 & 6 & 1 & 2 & 9
+    \end{bmatrix}\xrightarrow{\text{max pooling}}
+    \begin{bmatrix}
+      9 & 9 & 5\\
+      9 & 9 & 5\\
+      8 & 6 & 9
+    \end{bmatrix}
+  \end{align*}
+  \item Hyper parameter of the max pooling above: $f=3, s=1$. Common choice: $f=s=2$. Note that there is no parameter to learn in max pooling. 
+  \item Dimension of the output is $\left\lfloor\frac{n+2p-f}{s}\right\rfloor+1$, same as that of convolutional operation. For 3D volumes, pooling applied to each channel independently, so $n_c$ of input and output are the same.
+  \item Average pooling: rarely used, except in very deep networks for input collapsing.
+\end{itemize}
+\section{Fully Connected Layers}
+A fully connected layer is an ``ordinary'' NN layer. An example CNN:
+\begin{align*}
+  32\times 32\times 3&\xrightarrow[\textbf{conv1}]{f=5,s=1,n_c=8}28\times 28\times 8\xrightarrow[\textbf{pool1}]{f=2,s=2}14\times 14\times 8\\
+  &\xrightarrow[\textbf{conv2}]{f=5,s=1,n_c=16}10\times 10\times 16\xrightarrow[\textbf{pool2}]{f=2,s=2}5\times 5\times 16\\
+  &\xrightarrow{\text{unroll}}400\times 1\\
+  &\xrightarrow[\textbf{FC3}]{W^{[3]}(120\times 400), b^{[3]}(120\times 1)}120\times 1\\
+  &\xrightarrow[\textbf{FC4}]{W^{[4]}(84\times 120), b^{[4]}(84\times 1)}84\times 1\\
+  &\xrightarrow[\textbf{softmax}]{}\hat{y}(10\times 1\text{ for digit recognition})
+\end{align*}
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{c|ccc}
+    & Activation Shape      & Activation Size & \#Paras\\\hline
+    Input   & $32\times 32\times 3$ & 3072 & 0\\
+    Conv1($f=5,s=1$)   & $28\times 28\times 8$ & 6272 & 608\\
+    Pool1   & $14\times 14\times 8$ & 1568 & 0\\
+    Conv2($f=5,s=1$)   & $10\times 10\times 16$ & 1600 & 3216\\
+    Pool2   & $5\times 5\times 16$ & 400 & 0\\
+    FC3     & $120\times 1$ & 120 & 48120\\
+    FC4     & $84\times 1$ & 84 & 10164\\
+    Softmax & $10\times 1$ & 10 & 850\\
+  \end{tabular}
+\end{table}
+\begin{itemize}
+  \item Trend of hyperparas as NN goes deeper: $n_H,n_W\searrow$, $n_c\nearrow$
+  \item Typical structure of CNN: conv, pool, $\cdots$, conv, pool, FC, $\cdots$, FC, softmax/logistic
+  \item Pooling layers have no parameters. Conv layers have fewer parameters. FC layers have a lot of parameters.
+  \item In general, activation size goes down as the NN goes deeper. But it's not a good idea for it to go down too quickly.
+\end{itemize}
+\section{Why Convolutions}
+CNN has the following advantages over normal NN:
+\begin{itemize}
+  \item Parameter sharing: a feature detector (e.g. vertical edge detector) useful in one part of an image is probably useful in other parts of the image.
+  \item Sparsity of connections: in each layer, each output pixel depends on only a small number of input pixels.
+\end{itemize}
+This results in much smaller number of parameters and thus much smaller tendency to overfitting.
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
