@@ -74,7 +74,8 @@ Considering padding, $C$ is a $\left\lfloor\frac{n_H+2p-f}{s}\right\rfloor+1\tim
   Note that the output is still a 2D matrix.
   \item Multiple filters can be applied at the same time so that the output is also a volume. e.g. this can be used to detect edges along both vertical and horizontal directions.
 \end{itemize}
-\section{Convolution Layers}
+\section{CNN Layers}
+\subsection{Convolutional Layers}
 \begin{itemize}
   \item Operation: convolve the image with a few filters of the same size, add bias items to the output images, then apply non-linear activation. With input image $A$ of size $n_H\times n_W\times n_c$, $n_f$ filters $F_i$ of size $f\times f\times n_c$, we have:
   \begin{align*}
@@ -105,7 +106,7 @@ Considering padding, $C$ is a $\left\lfloor\frac{n_H+2p-f}{s}\right\rfloor+1\tim
   \end{align*}
   Typical trend accross layers: image size decreases ($n_H, n_W$), number of channels increases ($n_c$).
 \end{itemize}
-\section{Pooling Layers}
+\subsection{Pooling Layers}
 \begin{itemize}
   \item Max pooling operation: select the maximum item within the filter
   \begin{align*}
@@ -126,7 +127,7 @@ Considering padding, $C$ is a $\left\lfloor\frac{n_H+2p-f}{s}\right\rfloor+1\tim
   \item Dimension of the output is $\left\lfloor\frac{n+2p-f}{s}\right\rfloor+1$, same as that of convolutional operation. For 3D volumes, pooling applied to each channel independently, so $n_c$ of input and output are the same.
   \item Average pooling: rarely used, except in very deep networks for input collapsing.
 \end{itemize}
-\section{Fully Connected Layers}
+\subsection{Fully Connected Layers}
 A fully connected layer is an ``ordinary'' NN layer. An example CNN:
 \begin{align*}
   32\times 32\times 3&\xrightarrow[\textbf{conv1}]{f=5,s=1,n_c=8}28\times 28\times 8\xrightarrow[\textbf{pool1}]{f=2,s=2}14\times 14\times 8\\
@@ -163,6 +164,81 @@ CNN has the following advantages over normal NN:
   \item Sparsity of connections: in each layer, each output pixel depends on only a small number of input pixels.
 \end{itemize}
 This results in much smaller number of parameters and thus much smaller tendency to overfitting.
+\section{CNN Case Studies}
+\subsection{Classic Networks}
+\subsubsection{LeNet-5}
+\begin{align*}
+  32\times 32\times 1\footnotemark&\xrightarrow[\textbf{conv1}]{f=5,s=1,n_c=6}28\times 28\times 6\xrightarrow[\textbf{avg pool1}]{f=2,s=2}14\times 14\times 6\\
+  &\xrightarrow[\textbf{conv2}]{f=5,s=1,n_c=16}10\times 10\times 16\xrightarrow[\textbf{avg pool2}]{f=2,s=2}5\times 5\times 16\\
+  &\xrightarrow{\text{unroll}}400\times 1\\
+  &\xrightarrow[\textbf{FC3}]{W^{[3]}(120\times 400), b^{[3]}(120\times 1)}120\times 1\\
+  &\xrightarrow[\textbf{FC4}]{W^{[4]}(84\times 120), b^{[4]}(84\times 1)}84\times 1\\
+  &\xrightarrow[\textbf{softmax}]{}\hat{y}(10\times 1\text{ for digit recognition})
+\end{align*}
+\footnotetext{Only 1 channel because it uses grayscale images}
+\begin{itemize}
+  \item 60K parameters: small by modern standards
+  \item As networks goes deeper: $n_H,n_W\searrow,n_c\nearrow$
+  \item Follows pattern: conv$\rightarrow$pool$\rightarrow\cdots\rightarrow$FC
+  \item In the early ages of CNN, padding is usually not used.
+  \item Sigmoid \& tanh was used instead of ReLU
+\end{itemize}
+\subsubsection{AlexNet}
+\begin{align*}
+  227\times 227\times 3&\xrightarrow[\textbf{conv}]{f=11,s=4,n_c=96}55\times 55\times 96\xrightarrow[\textbf{max pool}]{f=3,s=2}27\times 27\times 96\\
+  &\xrightarrow[\textbf{conv}]{f=5,\text{same padding},n_c=256}27\times 27\times 256\xrightarrow[\textbf{max pool}]{f=3,s=2}13\times 13\times 256\\
+  &\xrightarrow[\textbf{conv}]{f=3,\text{same padding},n_c=384}13\times 13\times 384\\
+  &\xrightarrow[\textbf{conv}]{f=3,\text{same padding},n_c=384}13\times 13\times 384\\
+  &\xrightarrow[\textbf{conv}]{f=3,\text{same padding},n_c=384}13\times 13\times 256\xrightarrow[\textbf{max pool}]{f=3,s=2}6\times 6\times 256\\
+  &\xrightarrow{\text{unroll}}9216\times 1\xrightarrow[\textbf{FC}]{}4096\times 1\xrightarrow[\textbf{FC}]{}4096\times 1\\
+  &\xrightarrow[\textbf{softmax}]{}\hat{y}(1000\times 1)
+\end{align*}
+\begin{itemize}
+  \item 6M parameters
+  \item Convinced the CV community of feasibility of DL.
+\end{itemize}
+\subsubsection{VGG-16}
+In the structure of VGG-16, \textbf{CONV}=$3\times 3, s=1$, same padding. \textbf{MAX-POOL}=$2\times 2, s=2$
+\begin{align*}
+  224\times 224\times 3&\xrightarrow[\times 2]{\textbf{CONV } 64}224\times 224\times 64\xrightarrow{\textbf{POOL}}112\times 112\times 64\\
+  &\xrightarrow[\times 2]{\textbf{CONV } 128}112\times 112\times 128\xrightarrow{\textbf{POOL}}56\times 56\times 128\\
+  &\xrightarrow[\times 3]{\textbf{CONV } 256}56\times 56\times 256\xrightarrow{\textbf{POOL}}28\times 28\times 256\\
+  &\xrightarrow[\times 3]{\textbf{CONV } 512}28\times 28\times 512\xrightarrow{\textbf{POOL}}14\times 14\times 512\\
+  &\xrightarrow[\times 3]{\textbf{CONV } 512}14\times 14\times 512\xrightarrow{\textbf{POOL}}7\times 7\times 512\\
+  &\xrightarrow{\textbf{FC}}4096\xrightarrow{\textbf{FC}}4096\xrightarrow{\textbf{softmax}}1000
+\end{align*}
+\begin{itemize}
+  \item Large: 130M parameters, yet simple architecture
+  \item \# channels doubles\footnote{Roughly. 512 does not doube to 1024.} from layer to layer
+\end{itemize}
+\subsection{ResNet}
+Training very deep NN is difficult because of problems like exploding and vanishing gradients. Residual networks (ResNets) solves the problem with skip connections.
+\subsubsection{Residual Block}
+In a normal NN, $a^{[l]}$ needs to go through the main path to reach $a^{[l+2]}$:
+\[a^{[l]}\rightarrow\textbf{Linear}\rightarrow\textbf{Relu}\rightarrow a^{[l+1]}\rightarrow\textbf{Linear}\rightarrow\textbf{Relu}\rightarrow a^{[l+1]}\]
+In detail: 
+\begin{align*}
+  z^{[l+1]}&=W^{[l+1]}a^{[l]}+b^{[l+1]}\\
+  a^{[l+1]}&=g\left(z^{[l+1]}\right)\\
+  z^{[l+2]}&=W^{[l+2]}a^{[l+1]}+b^{[l+2]}\\
+  a^{[l+2]}&=g\left(z^{[l+2]}\right)
+\end{align*}
+In a ResNet, $a^{[l]}$ can follow a shortcut (or skip connection) and get added to $z^{[l+2]}$ before applying non-linearity in layer $l+2$, i.e.
+\begin{align*}
+  a^{[l+2]}&=g\left(z^{[l+2]}{\color{red}+a^{[l]}}\right)
+\end{align*}
+In case of $a^{[l]}$ and $z^{[l+2]}$ having different dimensions, multiply $a^{[l]}$ with a matrix before carrying out the addition.
+
+A ResNet can be obtained by stacking a few residual blocks. The following shortcuts are added: $a^{[0]}\rightarrow a^{[2]}$,$a^{[2]}\rightarrow a^{[4]}\cdots$
+In a plain NN, training error tends to increase after the number of layers reach a certain number. In a ResNet, usually training error never increases.
+\subsubsection{Why ResNets Work}
+In a residual block: 
+\begin{align*}
+  a^{[l+2]}&=g\left(z^{[l+2]}+a^{[l]}\right)=g\left(W^{[l+2]}a^{[l+1]}+b^{[l+2]}+a^{[l]}\right)
+\end{align*}
+if $W^{[l+2]}=0,b^{[l+2]}=0$, we have
+\[a^{[l+2]}=g\left(a^{[l]}\right)=a^{[l]}\]
+since $a^{[l]}$ is non-negative as the output of Relu. Intuitively speaking, it's not hard for a residual block to learn the identity function, guaranteeing that the NN with a residual block added behaves at least as well as the network without the residual block.
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
