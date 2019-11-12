@@ -3,7 +3,7 @@
 \begin{document}
 \fi
 \chapter{Convolutional Neural Networks}
-Computer vision is developping rapidly thans to deep learning. It also provides inspiration for other fields in which DL is applied. Computer vision problems include: 
+Computer vision is developing rapidly thanks to deep learning. It also provides inspiration for other fields in which DL is applied. Computer vision problems include: 
 \begin{itemize}
   \item image classification
   \item object detection: detect object and draw bounding boxes. One image might contain multiple objects
@@ -11,7 +11,7 @@ Computer vision is developping rapidly thans to deep learning. It also provides 
 \end{itemize}
 One of the biggest challenges of applying DL in CV is its big input size: for a 1000$\times$1000 image, the input size is 3M, if the 1st layer contains 1000 hidden units, then $W^{[1]}$ will have 3B elements, which makes it hard not to overfit, and also requires more hardware resources for training. The solution is the convolutional operation.
 \section{Convolutional Operation}
-Convolutional operation\footnote{In mathematical textbooks, the filter should be flipped ($F^f_{ij}=F_{m-1-i, n-1-j}$)before the operation above. The convolutional operation in DL is called cross-correlation in math context. The flipping makes the operation assosiative.}: with $n_H\times n_W$ matrix $A$ and $f\times f$ matrix $F$ (kernel, or filter), we define their convolution $C$ as follows:
+Convolutional operation\footnote{In mathematical textbooks, the filter should be flipped ($F^f_{ij}=F_{m-1-i, n-1-j}$)before the operation above. The convolutional operation in DL is called cross-correlation in math context. The flipping makes the operation associative.}: with $n_H\times n_W$ matrix $A$ and $f\times f$ matrix $F$ (kernel, or filter), we define their convolution $C$ as follows:
     \[C_{ij}=\left(A*F\right)_{ij}=\displaystyle\sum_{p=0}^{f-1}\displaystyle\sum_{q=0}^{f-1}A_{i+p,j+q}*F_{pq}, \left(0\le i\le n_H-f, 0\le j\le n_W-f\right)\]
 obviously $C$ is a $n_H-f+1\times n_W-f+1$ matrix.
 \subsection{Edge Detection}
@@ -45,12 +45,12 @@ obviously $C$ is a $n_H-f+1\times n_W-f+1$ matrix.
 \end{itemize}
 \subsection{Padding}
 \begin{itemize}
-  \item Downsides of the convolutional opertion above:
+  \item Downsides of the convolutional operation above:
   \begin{itemize}
     \item Image shrinks after convolution operations.
     \item Corner pixels are used only once; edge pixels are used only 2-3 times; etc
   \end{itemize} 
-  \item Solution: padding around the image border ($n_H\times n_W\rightarrow n_H+1\times n_W+1$). The value of the padded pixels is usually 0. The number of rows / columns to pad is called padding amound $p$.
+  \item Solution: padding around the image border ($n_H\times n_W\rightarrow n_H+1\times n_W+1$). The value of the padded pixels is usually 0. The number of rows / columns to pad is called padding amount $p$.
   \item Valid padding: no padding. image shrinks by $f-1$ pixels along both sides for an $f\times f$ filter. 
   \item Same padding: pad around the border so that image size remains the same.
   \[n+2p-f+1=n\Rightarrow p=\frac{f-1}{2}\]
@@ -68,7 +68,7 @@ Considering padding, $C$ is a $\left\lfloor\frac{n_H+2p-f}{s}\right\rfloor+1\tim
   \item An image is usually more than a 2D matrix. An RGB image has 3 channels, while an RGBA image has 4 channels. 
   \item The number of channels $n_c$ (also called depth) calls for the addition of another dimension to both the image and the filter.
   \begin{align*}
-    C_{ij}&=\left(A*F\right)_{ij}=\displaystyle\sum_{p=0}^{f-1}\displaystyle\sum_{q=0}^{f-1}\displaystyle\sum_{r=0}^{n_c-1}A_{i+p,j+q,k}*F_{pqk}\\
+    C_{ij}&=\left(A*F\right)_{ij}=\displaystyle\sum_{p=0}^{f-1}\displaystyle\sum_{q=0}^{f-1}\displaystyle\sum_{r=0}^{n_c-1}A_{i+p,j+q,r}*F_{pqr}\\
     0&\le i\le n_H-f, 0\le j\le n_W-f
   \end{align*}
   Note that the output is still a 2D matrix.
@@ -104,7 +104,7 @@ Considering padding, $C$ is a $\left\lfloor\frac{n_H+2p-f}{s}\right\rfloor+1\tim
     &\xrightarrow[40\text{ filters}]{f^{[3]}=5,s^{[3]}=2,p^{[3]}=0}7\times 7\times 40\\
     &\xrightarrow{\text{unroll}}1960\text{ vector}\xrightarrow{\text{logistic/softmax}}\hat{y}
   \end{align*}
-  Typical trend accross layers: image size decreases ($n_H, n_W$), number of channels increases ($n_c$).
+  Typical trend across layers: image size decreases ($n_H, n_W$), number of channels increases ($n_c$).
 \end{itemize}
 \subsection{Pooling Layers}
 \begin{itemize}
@@ -194,7 +194,7 @@ This results in much smaller number of parameters and thus much smaller tendency
   &\xrightarrow[\textbf{softmax}]{}\hat{y}(1000\times 1)
 \end{align*}
 \begin{itemize}
-  \item 6M parameters
+  \item 60M parameters
   \item Convinced the CV community of feasibility of DL.
 \end{itemize}
 \subsubsection{VGG-16}
@@ -209,7 +209,7 @@ In the structure of VGG-16, \textbf{CONV}=$3\times 3, s=1$, same padding. \textb
 \end{align*}
 \begin{itemize}
   \item Large: 130M parameters, yet simple architecture
-  \item \# channels doubles\footnote{Roughly. 512 does not doube to 1024.} from layer to layer
+  \item \# channels doubles\footnote{Roughly. 512 does not double to 1024.} from layer to layer
 \end{itemize}
 \subsection{ResNet}
 Training very deep NN is difficult because of problems like exploding and vanishing gradients. Residual networks (ResNets) solves the problem with skip connections.
@@ -239,6 +239,86 @@ In a residual block:
 if $W^{[l+2]}=0,b^{[l+2]}=0$, we have
 \[a^{[l+2]}=g\left(a^{[l]}\right)=a^{[l]}\]
 since $a^{[l]}$ is non-negative as the output of Relu. Intuitively speaking, it's not hard for a residual block to learn the identity function, guaranteeing that the NN with a residual block added behaves at least as well as the network without the residual block.
+\subsection{Inception Network}
+\subsubsection{1$\times$1 Convolution}
+\begin{itemize}
+  \item 1$\times$1 convolution (networks in networks) uses filters of size 1. Trivial in 2D: just multiplies the image by a constant.
+  \item For 3D volume, a filter $F$ becomes a 1D vector:
+  \begin{align*}
+    C_{ij}&=\left(A*F\right)_{ij}=\displaystyle\sum_{p=0}^{f-1}\displaystyle\sum_{q=0}^{f-1}\displaystyle\sum_{r=0}^{n_c-1}A_{i+p,j+q,r}*F_{pqr}=\sum_{r=0}^{n_c-1}A_{ijr}*F_{r}\\
+    0&\le i\le n_H-1, 0\le j\le n_W-1
+  \end{align*}
+  A series of 1$\times$1 convolutions can be viewed as a FC layer that acts on a slice of the input volume along the channel direction and outputs a slice along the channel direction. It adds non-linearity to the model.
+  \item Height and width of the volume remain unchanged after the convolution operation. Can be used to change $n_c$.
+\end{itemize}
+\subsubsection{Motivation}
+\begin{itemize}
+  \item Instead of manually choosing the filter size, we can just calculate the convolution with different filter sizes and concatenate the outputs, then let the model learn by itself:
+  \begin{align*}
+    28\times 28\times 192\left\{
+      \begin{aligned}
+        \xrightarrow[64\text{ filters 1$\times$1}]{1\times 1\text{ conv}}28\times 28\times 64\\
+        \xrightarrow[128\text{ filters}]{3\times 3\text{ conv}}28\times 28\times 128\\
+        \xrightarrow[32\text{ filters}]{5\times 5\text{ conv}}28\times 28\times 32\\
+        \xrightarrow[\text{max pool}]{}28\times 28\times 32\footnotemark
+      \end{aligned}
+    \right\}\rightarrow
+    28\times 28\times 256
+  \end{align*}
+  \footnotetext{The number of channels needs to be reduces with 1$\times$1 convolution.}
+  \item Problem: computing complexity. For the $5\times 5$ part, the number of multiplications needed is:
+  \[5\times 5\times 192\times 28\times 28\times 32=120\text{ million}\]
+  \item Solution: add a bottleneck layer using 1$\times$1 convolution:
+  \[28\times 28\times 192\xrightarrow[16\text{ filters conv}]{1\times 1}28\times 28\times 16
+  \xrightarrow[32\text{ filters conv}]{5\times 5}28\times 28\times 32\]
+  Number of multiplications needed shrinks by 10. It turns out that the performance is not hurt.
+  \[1\times 1\times 192\times 28\times 28\times 16+5\times 5\times 16\times 28\times 28\times 32=12.4\text{ million}\]
+\end{itemize}
+\subsubsection{Implementation}
+\begin{itemize}
+  \item An inception block:
+\begin{align*}
+  28\times 28\times 192&\left\{
+    \begin{aligned}
+      \xrightarrow[64\text{ filters}]{1\times 1\text{ conv}}&28\times 28\times 64\\
+      \xrightarrow[96\text{ filters}]{1\times 1\text{ conv}}&28\times 28\times 96&\xrightarrow[128\text{ filters}]{3\times 3\text{ conv}}&28\times 28\times 128\\
+      \xrightarrow[16\text{ filters}]{1\times 1\text{ conv}}&28\times 28\times 16&\xrightarrow[32\text{ filters}]{5\times 5\text{ conv}}&28\times 28\times 32\\
+      \xrightarrow[\text{max pool}]{3\times 3, s=1}&28\times 28\times 192&\xrightarrow[32\text{ filters}]{1\times 1\text{ conv}}&28\times 28\times 32
+    \end{aligned}
+  \right\}\\&\xrightarrow{\text{channel concat}}
+  28\times 28\times 256
+\end{align*}
+  \item An inception network can be implemented by a series of inception blocks and additional max pooling layers to change $n_H,n_W$.
+  \item Side branches of inception network: implementation detail. Take the output of a hidden layer, append a few FC and a softmax layer to make predictions. Helps to prevent overfitting (regularization effect).
+\end{itemize}
+\section{Practical Advices}
+\subsection{Use Open-Source Resources}
+\begin{itemize}
+  \item Use, or at least start with published network architectures, open-source implementations, pre-trained models.
+  \item Use transfer learning instead of train from scratch when possible. e.g use pre-trained cat recognizer to train recognizer of your own cats.
+    \begin{itemize}
+      \item When data set size is small: fix all previous layers and substitute the softmax layer.
+      \item When data set size is large: fix a few earlier layers and train your own for the rest.
+      \item When data set size is very large: use downloaded model as start point and train all layers.
+    \end{itemize}
+\end{itemize}
+\subsection{Data augmentation}
+\begin{itemize}
+  \item More data almost always helps in CV. 
+  \item Common methods include:
+  \begin{itemize}
+    \item Distortion: mirroring, random cropping, rotation, shearing, local warping, etc.
+    \item Color shifting: PCA color augmentation of AlexNet.
+  \end{itemize}
+  \item Data augmentation introduces its own hyper parameters into the problem.
+  \item Common implementation: have separate threads dedicated to data loading and data augmentation, and let these thread pass data to another thread/process dedicated to training.
+\end{itemize}
+\subsection{Benchmarking/Competition Suggestions}
+These methods help with benchmarking and winning competitions, but generally should not be used in production systems considering their performance.
+\begin{itemize}
+  \item Ensembling: train several networks independently and average their outputs.
+  \item Test time multi-crop: run classifier on multiple versions of test images and average their results.
+\end{itemize}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
