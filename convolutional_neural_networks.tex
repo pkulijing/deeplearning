@@ -322,6 +322,18 @@ These methods help with benchmarking and winning competitions, but generally sho
   \item Ensembling: train several networks independently and average their outputs.
   \item Test time multi-crop: run classifier on multiple versions of test images and average their results.
 \end{itemize}
+\section{Object Detection}
+\subsection{Object Localization}
+\begin{itemize}
+  \item Image classification: tell the class of the only object in the picture
+  \item Classification and Localization: classify the only object in the picture and find its position
+  \item Detection: the picture can contain multiple objects of different classes
+\end{itemize}
+For the classification and Localization problem, the output vector $\hat{y}$ becomes:
+\[\hat{y}=\begin{bmatrix}
+p_c & b_x & b_y & b_h & b_w & c_1 & c_2 & c_3
+\end{bmatrix}^{\mathsf{T}}\]
+in which $p_c$ denotes whether there exists an object in the image, $(b_x, b_y)$ is the center of the bounding box, $b_h, b_w$ is the height and width of the bounding box, and $c_i$ is the the normal softmax output for class $i$.
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
