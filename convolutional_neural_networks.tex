@@ -232,13 +232,16 @@ In case of $a^{[l]}$ and $z^{[l+2]}$ having different dimensions, multiply $a^{[
 A ResNet can be obtained by stacking a few residual blocks. The following shortcuts are added: $a^{[0]}\rightarrow a^{[2]}$,$a^{[2]}\rightarrow a^{[4]}\cdots$
 In a plain NN, training error tends to increase after the number of layers reach a certain number. In a ResNet, usually training error never increases.
 \subsubsection{Why ResNets Work}
-In a residual block: 
+\begin{itemize}
+\item In a residual block: 
 \begin{align*}
   a^{[l+2]}&=g\left(z^{[l+2]}+a^{[l]}\right)=g\left(W^{[l+2]}a^{[l+1]}+b^{[l+2]}+a^{[l]}\right)
 \end{align*}
 if $W^{[l+2]}=0,b^{[l+2]}=0$, we have
 \[a^{[l+2]}=g\left(a^{[l]}\right)=a^{[l]}\]
 since $a^{[l]}$ is non-negative as the output of Relu. Intuitively speaking, it's not hard for a residual block to learn the identity function, guaranteeing that the NN with a residual block added behaves at least as well as the network without the residual block.
+\item In very deep NNs, the shallow layers suffer a lot from vanishing gradient problem. Skip connections make them closer to the output layer, and thus help to prevent their gradients from vanishing too fast. 
+\end{itemize}
 \subsection{Inception Network}
 \subsubsection{1$\times$1 Convolution}
 \begin{itemize}
