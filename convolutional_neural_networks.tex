@@ -331,9 +331,106 @@ These methods help with benchmarking and winning competitions, but generally sho
 \end{itemize}
 For the classification and Localization problem, the output vector $\hat{y}$ becomes:
 \[\hat{y}=\begin{bmatrix}
-p_c & b_x & b_y & b_h & b_w & c_1 & c_2 & c_3
+p_c & b_x & b_y & b_h & b_w & c_1 & c_2 & \cdots & 
 \end{bmatrix}^{\mathsf{T}}\]
-in which $p_c$ denotes whether there exists an object in the image, $(b_x, b_y)$ is the center of the bounding box, $b_h, b_w$ is the height and width of the bounding box, and $c_i$ is the the normal softmax output for class $i$.
+in which $p_c$ denotes whether there exists an object in the image, $(b_x, b_y)$ is the center of the bounding box, $b_h, b_w$ is the height and width of the bounding box, and $c_i$ is the the normal softmax output for class $i$. The lost function is 
+\begin{align*}
+  \mathcal{L}\left(\hat{y},y\right)=\left\{
+  \begin{aligned}
+    \displaystyle\sum_{i=1}^{n_c+5}\left(y_i-\hat{y}_i\right)^2&\text{, if }y_1=1\\
+    \left(y_1-\hat{y}_1\right)^2&\text{, if }y_1=0
+  \end{aligned}
+  \right.
+\end{align*}
+Here we are using a simple squared error. More complex choice that consider $p_c$, bounding box, softmax output differently can also be used.
+
+Landmark detection: in some cases, we don't need the whole bounding box. The NN outputs just the coordinates of important landmarks of the object detected. e.g. key feature points on a human face for face recognition, joints of human body for gesture recognition. The output becomes:
+\[\hat{y}=\begin{bmatrix}
+  p_c & l_{1x} & l_{1y} & l_{2x} & l_{2y} & l_{3x} & l_{3y} & \cdots & 
+\end{bmatrix}^{\mathsf{T}}\]
+\subsection{Sliding Window Detection Algorithm}
+\subsubsection{Algorithm}
+\begin{enumerate}
+  \item Train an NN using closely cropped images (images cropped around the objects to detect)
+  \item For a certain windows size, slide the window around the whole image to detect the objects.
+  \item Change the windows size and repeat the process above.
+\end{enumerate}
+Before NN, the algorithm used for object detection is rather simple, so sliding window works. But with NN, it suffers from high computation cost. Increasing the stride and window size reduces computation cost, but hurts algorithm performance. Convolutional implementation of the algorithm solves the problem.
+\subsubsection{Convolutional Implementation}
+Turn FC layers into convolutional layers:
+\begin{align*}
+  14\times 14\times 3&\xrightarrow[16]{5\times 5}10\times 10\times 16\xrightarrow[\text{max pool}]{2\times 2}5\times 5\times 16\\
+  &{\color{blue}\xrightarrow[\text{FC}]{}400\times 1\xrightarrow[\text{FC}]{}400\times 1\xrightarrow[\text{softmax(4)}]{}\hat{y}(4\times 1)}
+\end{align*}
+\[\Downarrow\]
+\begin{align*}
+  14\times 14\times 3&\xrightarrow[16]{5\times 5}10\times 10\times 16\xrightarrow[\text{max pool}]{2\times 2}5\times 5\times 16\\
+  &{\color{red}\xrightarrow[400]{5\times 5}1\times 1\times 400\xrightarrow[400]{1\times 1}1\times 1\times 400\xrightarrow[4]{1\times 1}1\times 1\times 4}
+\end{align*}
+The FC layers and the convolutional layers are mathematically equivalent. To implement the convolutional version of sliding window, apply the network above to a 16$\times$16$\times$3 image:
+\begin{align*}
+  16\times 16\times 3&\xrightarrow[16]{5\times 5}12\times 12\times 16\xrightarrow[\text{max pool}]{2\times 2}6\times 6\times 16\\
+  &\xrightarrow[400]{5\times 5}2\times 2\times 400\xrightarrow[400]{1\times 1}2\times 2\times 400\xrightarrow[4]{1\times 1}2\times 2\times 4
+\end{align*}
+The elements of the $2\times 2$ output is exactly the output of feeding the sliding window at the corresponding corner into the network.
+
+Similarly, for a 28$\times$28$\times$3 image: 
+\begin{align*}
+  28\times 28\times 3&\xrightarrow[16]{5\times 5}24\times 24\times 16\xrightarrow[\text{max pool}]{2\times 2}12\times 12\times 16\\
+  &\xrightarrow[400]{5\times 5}8\times 8\times 400\xrightarrow[400]{1\times 1}8\times 8\times 400\xrightarrow[4]{1\times 1}8\times 8\times 4
+\end{align*}
+Each element in the output $8\times 8$ output corresponds to a $14\times 14$ window of the input image. The stride of the sliding window is decided by the max pooling size (here 2). 
+\subsection{Bounding Box Predictions}
+The bounding box outputted by the algorithm above is not accurate. YOLO (You Only Look Once) algorithm solves the problem. 
+\begin{itemize}
+\item Apply a find grid (e.g. 19$\times$19 for 100$\times$100 image) to the input image.
+\item Construct a label for each cell of the grid
+\[\hat{y}=\begin{bmatrix}
+  p_c & b_x & b_y & b_h & b_w & c_1 & c_2 & \cdots & 
+\end{bmatrix}^{\mathsf{T}}\]
+Each object is only assigned to the cell containing its midpoint. For a $g\times g$ grid, this makes the labels a $g\times g\times \left(n_c+5\right)$ volume.
+\item Choose the layers of the CNN so that the output matches the dimension of the labels.
+\item Convolutional implementation. Runs fast.
+\item Convention of bounding box denotation:  $b_x,b_y$: relative location of the object center within the cell (from 0 to 1), $b_h,b_w$: length of bounding box height/weight measured by the cell size as 1. $b_h, b_w$ can be larger than 1. 
+\end{itemize}
+\subsection{Removal of Duplicates}
+\subsubsection{Intersection over Union(IoU)}
+If $B$ is the actual bounding box and $P$ is the predicted value, IoU is defined as: 
+\[\mathbf{IoU}=\frac{P\cap B}{P\cup B}\]
+By convention, the prediction is considered correct if IoU$\ge$0.5.
+\subsubsection{Non-max Suppression}
+To remove duplicate detections, the non-max suppression algorithm selects the detections with local maximum $p_c$ as the final output by suppressing all non-max detections that have a large IoU with the maximum ones. The algorithm is carried out in the following steps (consider only one object class):
+\begin{itemize}
+\item Discard all boxes with $p_c<0.6$
+\item While there are any remaining boxes:
+\begin{itemize}
+    \item Pick the box with the largest $p_c$ as a prediction
+    \item Discard any remaining box with IoU$\ge$0.5 with the box just outputted
+\end{itemize}
+\end{itemize}
+When there are more than one classes, non-max suppression should be carried out independently for each class.
+\subsubsection{Anchor Boxes}
+\begin{itemize}
+  \item Anchor boxes solve the problem of the midpoint of two different objects residing in the same cell.
+  \item Predefine a series of anchor boxes (e.g. one for pedestrian, one for vehicle). Instead of assigning each object in the training image to a grid cell, assign it to a (cell, anchor box) pair. The grid cell contains its midpoint, and the anchor box has the highest IoU with its bounding box. 
+  \item The label $\hat{y}$ now contains $n_a\left(n_c+5\right)$ elements, in which $n_a$ is the number of anchor boxes. e.g. In an object detection problem with two classes (pedestrian and vehicle), for a cell that contains the midpoint of both a pedestrian and a vehicle, the label is 
+  \[\hat{y}=\begin{bmatrix}
+    \color{red}1 & \color{red}\mathbf{b}_{ped} & \color{red}1 & \color{red}0 & \color{blue}1 & \color{blue}\mathbf{b}_{veh} & \color{blue}0 & \color{blue}1  
+  \end{bmatrix}^{\mathsf{T}}\]
+  For another cell with only a pedestrian: 
+  \[\hat{y}=\begin{bmatrix}
+    \color{red}1 & \color{red}\mathbf{b}_{ped} & \color{red}1 & \color{red}0 & \color{blue}0 & \color{blue}- & \color{blue}- & \color{blue}-
+  \end{bmatrix}^{\mathsf{T}}\]
+  \item When the grid cell is small, the situation in which midpoints of more than objects lie in one cell is rare.
+  \item Anchor box allows the object detection algorithm to specialize better. The boxes can be chosen by hand or obtained by grouping the object shapes using k-means.
+\end{itemize}
+\subsection{Region Proposal}
+\begin{itemize}
+  \item YOLO algorithm may make apparently wrong predictions in regions where no object exists. Algorithms have been designed that first pick the promising regions for object detection, then carry out the detection.
+  \item R-CNN: propose regions by segmentation$\rightarrow$classify proposed regions one at a time
+  \item Fast R-CNN: propose regions by segmentation$\rightarrow$classify all proposed regions using convolutional implementation of sliding windows.
+  \item Faster R-CNN: Use CNN to propose regions
+\end{itemize}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
