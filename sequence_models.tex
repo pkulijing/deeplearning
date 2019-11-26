@@ -1,0 +1,77 @@
+\ifx\PREAMBLE\undefined
+\input{preamble}
+\begin{document}
+\fi
+\chapter{Sequence Models}
+Examples of sequence model use cases:
+\begin{itemize}
+  \item Speech recognition: audio clip $\rightarrow$ transcript
+  \item Music generation: genre of music $\rightarrow$ music clip
+  \item Sentiment classification: ``there is nothing to like in this movie'' $\rightarrow$ one star
+  \item DNA sequence analysis: DNA sequence $\rightarrow$ sequences encoding proteins
+  \item Machine translation: French sentence $\rightarrow$ English sentence
+  \item Video activity recognition: video of people running $\rightarrow$ running
+  \item Named entity recognition: text $\rightarrow$ names in the text
+\end{itemize}
+Notation (using named entity recognition as an example):
+\begin{itemize}
+\item Input $x$: \textit{Harry Porter} and \textit{Hermione Granger} invented a new spell. $x^{\langle t\rangle}$ is the $t^{th}$ word.
+\item Output $y$ (whether each word is part of a name): 110110000. $y^{\langle t\rangle}$ for the $t^{th}$ word.
+\item Length of the sequences $T_x=9, T_y=9$
+\item Same notation as before for training example index: $X^{(i)\langle t\rangle}$, $Y^{(i)\langle t\rangle}$, $T_x^{(i)}$, $T_y^{(i)}$.
+\item Content of $x^{\langle t\rangle}$: define a vocabulary containing all words. Each word is represented by a one-hot vector (one at the index of the word in the vocabulary) whose dimension is the vocabulary size. The vocabulary contains an \textit{unknown} item to represent words not in the vocabulary.
+\end{itemize}
+\section{Recurrent Neural Networks}
+\subsection{Problem of Standard NN}
+\begin{itemize}
+  \item Input/output of different training examples have different dimensions.
+  \item Features learned across different positions of text are not shared.
+  \item Large number of parameters because input size is large.
+\end{itemize}
+\subsection{RNN Structure}
+\begin{center}
+  \begin{tabular}{cccccccccc}
+    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & $x^{\langle 3\rangle}$ & & & & $x^{\langle T_x\rangle}$\\
+  \end{tabular}
+\end{center}
+\begin{itemize}
+  \item The activation for $x^{\langle t\rangle}$ is fed as an input for the next item in the sequence $x^{\langle t+1\rangle}$.\footnote{Later items in the sequence are not used for making predictions. The issue will be solved by BRNN (B for bidirectional).}
+  \item Parameters are shared among time steps.
+  \item $a^{\langle 0\rangle}$ is a fake time 0 activation, usually all zero.
+  \item Here we assume $T_x=T_y$. 
+  \end{itemize}
+Calculation:
+\begin{align*}
+a^{\langle t\rangle}&=g_a\left(W_{aa}a^{\langle t-1\rangle}+W_{ax}x^{\langle t\rangle}+b_a\right)=g_a\left(W_{a}\left[a^{\langle t-1\rangle}, x^{\langle t\rangle}\right]+b_a\right)\\
+\hat{y}^{\langle t\rangle}&=g_y\left(W_{ya}a^{\langle t\rangle}+b_y\right)=g_y\left(W_{y}a^{\langle t\rangle}+b_y\right)
+\end{align*}
+\begin{itemize}
+\item $W_a\equiv\left[W_{aa}, W_{ax}\right], W_y\equiv W_{ya}$
+\item $g_a$ is usually $\tanh$ or Relu.
+\item $g_y$ depends on output $\hat{y}$ (e.g. sigmoid for binary output).
+\end{itemize}
+\subsection{Backpropagation through Time}
+Loss function:
+\begin{align*}
+  \mathcal{L}^{\langle t\rangle}\left(\hat{y}^{\langle t\rangle}, y^{\langle t\rangle}\right)&=-y^{\langle t\rangle}\log\hat{y}^{\langle t\rangle}-\left(1-y^{\langle t\rangle}\right)\log\left(1-\hat{y}^{\langle t\rangle}\right)\\
+  \mathcal{L}&=\displaystyle\sum_{t=1}^{T_x}\mathcal{L}^{\langle t\rangle}\left(\hat{y}^{\langle t\rangle}, y^{\langle t\rangle}\right)
+\end{align*}
+\begin{center}
+  \begin{tabular}{cccccccccc}
+    & $\mathcal{L}^{\langle 1\rangle}$ & & $\mathcal{L}^{\langle 2\rangle}$ & & $\mathcal{L}^{\langle 3\rangle}$ & & & & $\mathcal{L}^{\langle T_y\rangle}$\\
+    & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & & & $\uparrow\color{red}\downarrow$\\ 
+    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & & & $\uparrow\color{red}\downarrow$\\ 
+    \makecell{$\xrightarrow{a^{\langle 0\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle 0\rangle}}}$}& NN & \makecell{$\xrightarrow{a^{\langle 1\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle 0\rangle}}}$} & NN & \makecell{$\xrightarrow{a^{\langle 2\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle 2\rangle}}}$} & NN & \makecell{$\xrightarrow{a^{\langle 3\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle 0\rangle}}}$} & $\cdots$ & \makecell{$\xrightarrow{a^{\langle T_x-1\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle T_x-1\rangle}}}$} & NN \\ 
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & $x^{\langle 3\rangle}$ & & & & $x^{\langle T_x\rangle}$\\
+  \end{tabular}
+\end{center}
+\subsection{Different Types of RNN}
+\ifx\PREAMBLE\undefined
+\end{document}
+\fi
