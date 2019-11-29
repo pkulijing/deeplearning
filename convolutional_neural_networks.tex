@@ -493,7 +493,7 @@ Content image $C$ + style image $S$ $\rightarrow$ generated image $G$.
 \subsection{Visualization of Learned Features}
 \begin{itemize}
   \item To find out what a unit is learning, find the 9 images that maximizes the unit's activation. 
-  \item Shallow layers tend to learn simple features involving small parts of an image. Deep layers learn complex features.
+  \item Shallow layers tend to learn low-level simple features involving small parts of an image: edges, simple textures. Deep layers learn high-level complex features: complex textures, object classes.
 \end{itemize}
 \subsection{Cost Function}
 \begin{align*}
@@ -502,11 +502,16 @@ Content image $C$ + style image $S$ $\rightarrow$ generated image $G$.
 The generated image can be obtained by starting from a randomly initialized image and applying gradient descent on the cost function.
 \subsubsection{Content Cost Function}
 Use activations of hidden layer $l$ of a pre-trained CNN to compute content cost. $l$ should be neither too deep nor too shallow.
-  \[\mathcal{J}_{content}^{[l]}(C,G)=\frac{1}{2}\left\Vert a^{[l](C)}-a^{[l](G)}\right\Vert^2\]
+  \[\mathcal{J}_{content}^{[l]}(C,G)=\frac{1}{4n_Hn_Wn_C}\left\Vert a^{[l](C)}-a^{[l](G)}\right\Vert^2\]
 \subsubsection{Style Cost Function}
 Style is defined as the correlation\footnote{The name correlation is used to convey the intuition. Mathematically we are using the unnormalized cross covariance.} between activations across different channels. Let $G^{[l]}_{kk'}$ denote the correlation between the activations of channel $k$ and $k'$ in layer $l$, we have
 \[G^{[l]}_{kk'}=\displaystyle\sum_{i=1}^{n_H^{[l]}}\displaystyle\sum_{j=1}^{n_W^{[l]}}a^{[l]}_{ijk}a^{[l]}_{ijk'}\]
-$G^{[l]}$ is called the style matrix\footnote{Mathematically it's called the Gram Matrix.} for layer $l$. The cost function for layer $l$ is defined as 
+$G^{[l]}$ is called the style matrix\footnote{Mathematically it's called the Gram Matrix. In linear algebra, the Gram matrix $G$ of a set of vectors $(v_1,\cdots,v_n)$ is the matrix of dot products, whose entries are $G_{ij}=v_i^{\mathsf{T}}\cdot v_j$} for layer $l$.
+\begin{itemize}
+  \item $G_{ij}$ measures how similar the activations of filter $i$  are to the activations of filter $j$.
+  \item $G_{ii}$ measures the prevalence of patterns or textures (how ``active'' a filter $i$ is. For example, suppose filter  $i$  is detecting vertical textures in the image. Then $G_{ii}$ measures how common vertical textures are in the image as a whole. If $G_{ii}$ is large, this means that the image has a lot of vertical texture.
+\end{itemize}
+The cost function for layer $l$ is defined as 
 \begin{align*}
   \mathcal{J}_{style}^{[l]}(S,G)&=\frac{1}{\left(2n_H^{[l]}n_W^{[l]}n_C^{[l]}\right)^2}\left\Vert G^{[l](S)}-G^{[l](G)}\right\Vert^2_F\\
   &=\frac{1}{\left(2n_H^{[l]}n_W^{[l]}n_C^{[l]}\right)^2}\displaystyle\sum_{k=1}^{n_c^{[l]}}\displaystyle\sum_{k'=1}^{n_c^{[l]}}\left(G^{[l](S)}_{kk'}-G^{[l](G)}_{kk'}\right)^2
