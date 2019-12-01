@@ -72,6 +72,74 @@ Loss function:
   \end{tabular}
 \end{center}
 \subsection{Different Types of RNN}
+\subsubsection{Many-to-many}
+The RNN we saw above is a many-to-many architecture, satisfying $T_x=T_y$:
+\begin{center}
+  \begin{tabular}{cccccccccc}
+    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & $x^{\langle 3\rangle}$ & & & & $x^{\langle T_x\rangle}$\\
+  \end{tabular}
+\end{center}
+\subsubsection{Many-to-one}
+The assumption $T_x=T_y$ may not always hold. For example, sentiment classification is a many-to-one architecture:
+\begin{center}
+  \begin{tabular}{cccccccccc}
+    & & & & & & & & & $\hat{y}$\\
+    & & & & & & & & & $\uparrow$\\ 
+    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & $x^{\langle 3\rangle}$ & & & & $x^{\langle T_x\rangle}$\\
+  \end{tabular}
+\end{center}
+\subsubsection{One-to-many}
+Music generation is a one-to-many architecture:
+\begin{center}
+  \begin{tabular}{cccccccccc}
+    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    & $\uparrow$ \\ 
+    & $x$ \\
+  \end{tabular}
+\end{center}
+In this architecture, the output $y^{\langle t\rangle}$ is often fed to the $t+1^{th}$ step as an input:
+\begin{center}
+  \begin{tabular}{cccccccccc}
+    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    & $x$ & & \color{red}$\hat{y}^{\langle 1\rangle}$ & & \color{red}$\hat{y}^{\langle 2\rangle}$ & & & & \color{red}$\hat{y}^{\langle T_y-1\rangle}$\\
+  \end{tabular}
+\end{center}
+\subsubsection{One-to-one}
+One-to-one structure is a simple standard NN(no actual RNN):
+\begin{center}
+  \begin{tabular}{c}
+    $\hat{y}^{\langle 1\rangle}$\\
+    $\uparrow$\\ 
+    NN\\
+    $\uparrow$\\ 
+    $x^{\langle 1\rangle}$ 
+  \end{tabular}
+\end{center}
+\subsubsection{Many-to-many(machine translation)}
+Machine translation uses a special many-to-many architecture:
+\begin{center}
+  \begin{tabular}{cccccccc}
+    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$ \\
+    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & & & $x^{\langle T_x\rangle}$ \\\arrayrulecolor{red}\hline
+    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\
+    $\xrightarrow{a^{\langle T_x\rangle}}$ & NN & $\xrightarrow{a^{\langle T_x+1\rangle}}$ & NN & $\xrightarrow{a^{\langle T_x+2\rangle}}$ &  $\cdots$ & $\xrightarrow{a^{\langle T_x+T_y-1\rangle}}$ & NN \\
+  \end{tabular}
+\end{center}
+It comprises an encoder ($1\sim T_x$) and a decoder ($T_x+1\sim T_x+T_y$).
+\subsection{Sequence Generation}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
