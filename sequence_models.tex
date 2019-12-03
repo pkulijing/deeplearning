@@ -2,6 +2,8 @@
 \input{preamble}
 \begin{document}
 \fi
+\newcommand{\angless}[2]{#1^{\left\langle #2\right\rangle}}
+\newcommand{\bracketss}[2]{#1^{\left[ #2\right]}}
 \chapter{Sequence Models}
 Examples of sequence model use cases:
 \begin{itemize}
@@ -15,60 +17,61 @@ Examples of sequence model use cases:
 \end{itemize}
 Notation (using named entity recognition as an example):
 \begin{itemize}
-\item Input $x$: \textit{Harry Porter} and \textit{Hermione Granger} invented a new spell. $x^{\langle t\rangle}$ is the $t^{th}$ word.
-\item Output $y$ (whether each word is part of a name): 110110000. $y^{\langle t\rangle}$ for the $t^{th}$ word.
+\item Input $x$: \textit{Harry Porter} and \textit{Hermione Granger} invented a new spell. $\angless{x}{t}$ is the $t^{th}$ word.
+\item Output $y$ (whether each word is part of a name): 110110000. $\angless{y}{t}$ for the $t^{th}$ word.
 \item Length of the sequences $T_x=9, T_y=9$
 \item Same notation as before for training example index: $X^{(i)\langle t\rangle}$, $Y^{(i)\langle t\rangle}$, $T_x^{(i)}$, $T_y^{(i)}$.
-\item Content of $x^{\langle t\rangle}$: define a vocabulary containing all words. Each word is represented by a one-hot vector (one at the index of the word in the vocabulary) whose dimension is the vocabulary size. The vocabulary contains an \textit{unknown} item to represent words not in the vocabulary.
+\item Content of $\angless{x}{t}$: define a vocabulary containing all words. Each word is represented by a one-hot vector (one at the index of the word in the vocabulary) whose dimension is the vocabulary size. The vocabulary contains an \textit{unknown} item to represent words not in the vocabulary.
 \end{itemize}
 \section{Recurrent Neural Networks}
-\subsection{Problem of Standard NN}
+\subsection{Basic RNN}
+\subsubsection{Problems of Standard NN}
 \begin{itemize}
   \item Input/output of different training examples have different dimensions.
   \item Features learned across different positions of text are not shared.
   \item Large number of parameters because input size is large.
 \end{itemize}
-\subsection{RNN Structure}
+\subsubsection{RNN Structure}
 \begin{center}
   \begin{tabular}{cccccccccc}
-    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & $x^{\langle 3\rangle}$ & & & & $x^{\langle T_x\rangle}$\\
+    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & & & $\angless{x}{T_x}$\\
   \end{tabular}
 \end{center}
 \begin{itemize}
-  \item The activation for $x^{\langle t\rangle}$ is fed as an input for the next item in the sequence $x^{\langle t+1\rangle}$.\footnote{Later items in the sequence are not used for making predictions. The issue will be solved by BRNN (B for bidirectional).}
+  \item The activation for $\angless{x}{t}$ is fed as an input for the next item in the sequence $\angless{x}{t+1}$.\footnote{Later items in the sequence are not used for making predictions. The issue will be solved by BRNN (B for bidirectional).}
   \item Parameters are shared among time steps.
-  \item $a^{\langle 0\rangle}$ is a fake time 0 activation, usually all zero.
+  \item $\angless{a}{0}$ is a fake time 0 activation, usually all zero.
   \item Here we assume $T_x=T_y$. 
   \end{itemize}
-Calculation:
+\subsubsection{Calculation}
 \begin{align*}
-a^{\langle t\rangle}&=g_a\left(W_{aa}a^{\langle t-1\rangle}+W_{ax}x^{\langle t\rangle}+b_a\right)=g_a\left(W_{a}\left[a^{\langle t-1\rangle}, x^{\langle t\rangle}\right]+b_a\right)\\
-\hat{y}^{\langle t\rangle}&=g_y\left(W_{ya}a^{\langle t\rangle}+b_y\right)=g_y\left(W_{y}a^{\langle t\rangle}+b_y\right)
+\angless{a}{t}&=g_a\left(W_{aa}\angless{a}{t-1}+W_{ax}\angless{x}{t}+b_a\right)=g_a\left(W_{a}\left[\angless{a}{t-1}, \angless{x}{t}\right]+b_a\right)\\
+\angless{\hat{y}}{t}&=g_y\left(W_{ya}\angless{a}{t}+b_y\right)=g_y\left(W_{y}\angless{a}{t}+b_y\right)
 \end{align*}
 \begin{itemize}
 \item $W_a\equiv\left[W_{aa}, W_{ax}\right], W_y\equiv W_{ya}$
 \item $g_a$ is usually $\tanh$ or Relu.
 \item $g_y$ depends on output $\hat{y}$ (e.g. sigmoid for binary output).
 \end{itemize}
-\subsection{Backpropagation through Time}
+\subsubsection{Backpropagation through Time}
 Loss function:
 \begin{align*}
-  \mathcal{L}^{\langle t\rangle}\left(\hat{y}^{\langle t\rangle}, y^{\langle t\rangle}\right)&=-y^{\langle t\rangle}\log\hat{y}^{\langle t\rangle}-\left(1-y^{\langle t\rangle}\right)\log\left(1-\hat{y}^{\langle t\rangle}\right)\\
-  \mathcal{L}&=\displaystyle\sum_{t=1}^{T_x}\mathcal{L}^{\langle t\rangle}\left(\hat{y}^{\langle t\rangle}, y^{\langle t\rangle}\right)
+  \angless{\mathcal{L}}{t}\left(\angless{\hat{y}}{t}, \angless{y}{t}\right)&=-\angless{y}{t}\log\angless{\hat{y}}{t}-\left(1-\angless{y}{t}\right)\log\left(1-\angless{\hat{y}}{t}\right)\\
+  \mathcal{L}&=\displaystyle\sum_{t=1}^{T_x}\angless{\mathcal{L}}{t}\left(\angless{\hat{y}}{t}, \angless{y}{t}\right)
 \end{align*}
 \begin{center}
   \begin{tabular}{cccccccccc}
-    & $\mathcal{L}^{\langle 1\rangle}$ & & $\mathcal{L}^{\langle 2\rangle}$ & & $\mathcal{L}^{\langle 3\rangle}$ & & & & $\mathcal{L}^{\langle T_y\rangle}$\\
+    & $\angless{\mathcal{L}}{1}$ & & $\angless{\mathcal{L}}{2}$ & & $\angless{\mathcal{L}}{3}$ & & & & $\angless{\mathcal{L}}{T_y}$\\
     & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & & & $\uparrow\color{red}\downarrow$\\ 
-    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
     & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & & & $\uparrow\color{red}\downarrow$\\ 
-    \makecell{$\xrightarrow{a^{\langle 0\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle 0\rangle}}}$}& NN & \makecell{$\xrightarrow{a^{\langle 1\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle 0\rangle}}}$} & NN & \makecell{$\xrightarrow{a^{\langle 2\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle 2\rangle}}}$} & NN & \makecell{$\xrightarrow{a^{\langle 3\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle 0\rangle}}}$} & $\cdots$ & \makecell{$\xrightarrow{a^{\langle T_x-1\rangle}}$\\\color{red}$\xleftarrow{\hphantom{a^{\langle T_x-1\rangle}}}$} & NN \\ 
+    \makecell{$\xrightarrow{\angless{a}{0}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{0}}}$}& NN & \makecell{$\xrightarrow{\angless{a}{1}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{0}}}$} & NN & \makecell{$\xrightarrow{\angless{a}{2}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{2}}}$} & NN & \makecell{$\xrightarrow{\angless{a}{3}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{0}}}$} & $\cdots$ & \makecell{$\xrightarrow{\angless{a}{T_x-1}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{T_x-1}}}$} & NN \\ 
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & $x^{\langle 3\rangle}$ & & & & $x^{\langle T_x\rangle}$\\
+    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & & & $\angless{x}{T_x}$\\
   \end{tabular}
 \end{center}
 \subsection{Different Types of RNN}
@@ -76,11 +79,11 @@ Loss function:
 The RNN we saw above is a many-to-many architecture, satisfying $T_x=T_y$:
 \begin{center}
   \begin{tabular}{cccccccccc}
-    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & $x^{\langle 3\rangle}$ & & & & $x^{\langle T_x\rangle}$\\
+    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & & & $\angless{x}{T_x}$\\
   \end{tabular}
 \end{center}
 \subsubsection{Many-to-one}
@@ -89,57 +92,175 @@ The assumption $T_x=T_y$ may not always hold. For example, sentiment classificat
   \begin{tabular}{cccccccccc}
     & & & & & & & & & $\hat{y}$\\
     & & & & & & & & & $\uparrow$\\ 
-    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & $x^{\langle 3\rangle}$ & & & & $x^{\langle T_x\rangle}$\\
+    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & & & $\angless{x}{T_x}$\\
   \end{tabular}
 \end{center}
 \subsubsection{One-to-many}
 Music generation is a one-to-many architecture:
 \begin{center}
   \begin{tabular}{cccccccccc}
-    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
     & $\uparrow$ \\ 
     & $x$ \\
   \end{tabular}
 \end{center}
-In this architecture, the output $y^{\langle t\rangle}$ is often fed to the $t+1^{th}$ step as an input:
+In this architecture, the output $\angless{y}{t}$ is often fed to the $t+1^{th}$ step as an input:
 \begin{center}
   \begin{tabular}{cccccccccc}
-    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & $\hat{y}^{\langle 3\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & NN & $\xrightarrow{a^{\langle 3\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
     & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $x$ & & \color{red}$\hat{y}^{\langle 1\rangle}$ & & \color{red}$\hat{y}^{\langle 2\rangle}$ & & & & \color{red}$\hat{y}^{\langle T_y-1\rangle}$\\
+    & $x$ & & \color{red}$\angless{\hat{y}}{1}$ & & \color{red}$\angless{\hat{y}}{2}$ & & & & \color{red}$\angless{\hat{y}}{T_y-1}$\\
   \end{tabular}
 \end{center}
 \subsubsection{One-to-one}
 One-to-one structure is a simple standard NN(no actual RNN):
 \begin{center}
   \begin{tabular}{c}
-    $\hat{y}^{\langle 1\rangle}$\\
+    $\angless{\hat{y}}{1}$\\
     $\uparrow$\\ 
     NN\\
     $\uparrow$\\ 
-    $x^{\langle 1\rangle}$ 
+    $\angless{x}{1}$ 
   \end{tabular}
 \end{center}
 \subsubsection{Many-to-many(machine translation)}
 Machine translation uses a special many-to-many architecture:
 \begin{center}
   \begin{tabular}{cccccccc}
-    $\xrightarrow{a^{\langle 0\rangle}}$& NN & $\xrightarrow{a^{\langle 1\rangle}}$ & NN & $\xrightarrow{a^{\langle 2\rangle}}$ & $\cdots$ & $\xrightarrow{a^{\langle T_x-1\rangle}}$ & NN \\ 
+    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
     & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$ \\
-    & $x^{\langle 1\rangle}$ & & $x^{\langle 2\rangle}$ & & & & $x^{\langle T_x\rangle}$ \\\arrayrulecolor{red}\hline
-    & $\hat{y}^{\langle 1\rangle}$ & & $\hat{y}^{\langle 2\rangle}$ & & & & $\hat{y}^{\langle T_y\rangle}$\\
+    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & & & $\angless{x}{T_x}$ \\\arrayrulecolor{red}\hline
+    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & & & $\angless{\hat{y}}{T_y}$\\
     & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\
-    $\xrightarrow{a^{\langle T_x\rangle}}$ & NN & $\xrightarrow{a^{\langle T_x+1\rangle}}$ & NN & $\xrightarrow{a^{\langle T_x+2\rangle}}$ &  $\cdots$ & $\xrightarrow{a^{\langle T_x+T_y-1\rangle}}$ & NN \\
+    $\xrightarrow{\angless{a}{T_x}}$ & NN & $\xrightarrow{\angless{a}{T_x+1}}$ & NN & $\xrightarrow{\angless{a}{T_x+2}}$ &  $\cdots$ & $\xrightarrow{\angless{a}{T_x+T_y-1}}$ & NN \\
   \end{tabular}
 \end{center}
 It comprises an encoder ($1\sim T_x$) and a decoder ($T_x+1\sim T_x+T_y$).
-\subsection{Sequence Generation}
+\subsection{Language Model \& Sequence Generation}
+A language model estimates the probability of a sentence:
+\[P\left(\angless{y}{1},\angless{y}{2},\cdots, \angless{y}{T_y}\right)\]
+For example, for speech recognition, when hearing a sentence \textit{the apple and pear salad}, a good system should output 
+\[P(\textit{the apple and {\color{red}pear} salad})\gg P(\textit{the apple and {\color{red}pair} salad})\]
+To build a language model using RNN, the training set is a corpus\footnote{NLP terminology. A large set.} of text. Each sentence is tokenized into a series of tokens:
+\begin{center}
+  \begin{tabular}{ccccccccc}
+    Cats & average & 15 & hours & of & sleep & a & day & $\langle\text{EOS}\rangle$\footnotemark\\
+    $\angless{y}{1}$ & $\angless{y}{2}$ & $\angless{y}{3}$ & $\angless{y}{4}$ & $\angless{y}{5}$ & $\angless{y}{6}$ & $\angless{y}{7}$ & $\angless{y}{8}$ &  $\angless{y}{9}$\\
+  \end{tabular}
+\end{center}
+\footnotetext{EOS means end of sentence.}
+If a word does not belong to the vocabulary, it is replaced with a unique token UNK, which stands for unknown words. After the tokenization, we build an RNN to model the chance of different sequences:
+\begin{center}
+  \begin{tabular}{cccccccc}
+    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & & & $\angless{\hat{y}}{9}$\\
+    & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    $\xrightarrow{\angless{a}{0}=\mathbf{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & $\cdots$ & $\xrightarrow{\angless{a}{8}}$ & NN \\ 
+    & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
+    & $\angless{x}{1}=\mathbf{0}$ & & $\angless{x}{2}=\angless{\hat{y}}{1}$ & & & & $\angless{x}{9}=\angless{\hat{y}}{8}$\\
+  \end{tabular}
+\end{center}
+\begin{itemize}
+  \item $\angless{\hat{y}}{t}$ is a softmax output representing the conditional probability distribution of the $t^{th}$ word given the first $t-1$ words. It's a vector whose dimension is the vocabulary size.
+  \[\angless{\hat{y}}{t}_i=P\left(w_i\left\vert \angless{y}{1}\angless{y}{2}\cdots \angless{y}{t-1}\right.\right)\]
+  \item The input $\angless{x}{t}$ is the ${t-1}^{th}$ token $\angless{y}{t-1}$.
+  \item Loss function:
+  \[\mathcal{L}=\displaystyle\sum_{t}\angless{\mathcal{L}}{t}\left(\angless{\hat{y}}{t},\angless{y}{t}\right)=-\displaystyle\sum_{t}\left[\angless{y}{t}\log\angless{\hat{y}}{t}+\left(1-\angless{y}{t}\right)\log\left(1-\angless{\hat{y}}{t}\right)\right]\]
+  \item After training the RNN on a training set, the obtained model can calculate the probability of a sentence:
+  \begin{align*}
+    P\left(\angless{y}{1},\angless{y}{2},\angless{y}{3}\right)&=P\left(\angless{y}{1}\right)\cdot P\left(\angless{y}{2}\left\vert \angless{y}{1}\right.\right)\cdot P\left(\angless{y}{3}\left\vert \angless{y}{1}\angless{y}{2}\right.\right)\\
+    &=\angless{\hat{y}}{1}_{\angless{y}{1}}\cdot\angless{\hat{y}}{2}_{\angless{y}{2}}\cdot\angless{\hat{y}}{3}_{\angless{y}{3}}
+  \end{align*}
+  \item Character-level model: take characters, as well as punctuations and spaces, instead of words as tokens. No unknown token, but longer sequence. Not good at capturing long range dependencies.
+  \item Sampling novel sequences: randomly sample a word according to the probability distribution indicated by $\angless{\hat{y}}{t}$, feed it to the next step, and repeat. This process leads to a randomly generated sequence of words.
+\end{itemize}
+\subsection{Solving Vanishing Gradients}
+Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN to capture long range dependencies. Exploding gradients also happen, but can be solved by gradient clipping.
+\subsubsection{Gated Recurrent Unit(GRU)}
+\begin{itemize}
+  \item Simplified GRU: 
+  \begin{align*}
+    \angless{\tilde{c}}{t}&=\tanh\left(W_c\left[\angless{c}{t-1},\angless{x}{t}\right]+b_c\right)\\
+    \Gamma_u&=\sigma\left(W_u\left[\angless{c}{t-1},\angless{x}{t}\right]+b_u\right)\\
+    \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\left(1-\Gamma_u\right)\ast \angless{c}{t}
+  \end{align*}
+  \begin{itemize}
+    \item $c$ means memory cell. For GRU, $\angless{a}{t}=\angless{c}{t}$.
+    \item $\angless{\tilde{c}}{t}$ is a candidate to replace $\angless{c}{t}$. 
+    \item $\Gamma_u$ is an update gate controlling whether to replace $\angless{c}{t}$ with $\angless{\tilde{c}}{t}$. For most inputs, $\Gamma_u$ (sigmoid output) is close to 1 or 0. For 1, the replacement is carried out. For 0, the value of $\angless{c}{t}$ is preserved. 
+    \item GRU solves the vanishing gradients problem because it preserves the value of $\angless{c}{t}$ in a lot of steps, allowing long-range dependencies to be captured.
+    \item $\angless{c}{t}, \angless{\tilde{c}}{t}, \Gamma_u$ are vectors of the same dimension. $\ast$ is element-wise multiplication.
+  \end{itemize}
+  \item Full GRU:
+  \begin{align*}
+    \angless{\tilde{c}}{t}&=\tanh\left(W_c\left[\Gamma_r\ast \angless{c}{t-1},\angless{x}{t}\right]+b_c\right)\\
+    \Gamma_u&=\sigma\left(W_u\left[\angless{c}{t-1},\angless{x}{t}\right]+b_u\right)\\
+    \Gamma_r&=\sigma\left(W_r\left[\angless{c}{t-1},\angless{x}{t}\right]+b_r\right)\\
+    \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\left(1-\Gamma_u\right)\ast \angless{c}{t}
+  \end{align*}
+  \begin{itemize}
+    \item $\Gamma_r$ is a relevance gate controlling the relevance between $\angless{\tilde{c}}{t}$ and $\angless{c}{t-1}$.
+    \item The addition of $\Gamma_r$ is a result of research practice. Researcher converged to it after various attempts of architecture. 
+  \end{itemize}
+\end{itemize}
+\subsubsection{Long Short Term Memory(LSTM)}
+\begin{align*}
+  \angless{\tilde{c}}{t}&=\tanh\left(W_c\left[\angless{a}{t-1},\angless{x}{t}\right]+b_c\right)\\
+  \Gamma_u&=\sigma\left(W_u\left[\angless{a}{t-1},\angless{x}{t}\right]+b_u\right)\\
+  \Gamma_f&=\sigma\left(W_f\left[\angless{a}{t-1},\angless{x}{t}\right]+b_f\right)\\
+  \Gamma_o&=\sigma\left(W_o\left[\angless{a}{t-1},\angless{x}{t}\right]+b_o\right)\\
+  \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\Gamma_f \ast \angless{c}{t}\\
+  \angless{a}{t}&=\Gamma_o\ast \tanh\left(\angless{c}{t}\right)
+\end{align*}
+\begin{itemize}
+  \item $\Gamma_u$: update gate. $\Gamma_f$: forget gate. $\Gamma_o$: output gate.
+  \item Peephole connection: $\angless{c}{t}$ used to calculate gates.
+\end{itemize}
+\subsection{Complex RNNs}
+Using the standard RNN, including GRU and LSTM as building blocks, we can build more complex RNN structures.
+\subsubsection{Bidirectional RNN(BRNN)}
+The RNNs above are uni-directional: no information from future steps is used. A BRNN solves the problem by also calculating activation from the reverse direction.
+\newcommand{\xbidirectionalarrow}[2]{\makecell{$\xrightarrow{\angless{\overrightarrow{a}}{#1}}$\\\color{red}$\xleftarrow{{\angless{\overleftarrow{a}}{#2}}}$}}
+\begin{center}
+  \begin{tabular}{ccccccccc}
+    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & $\angless{\hat{y}}{4}$\\
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & $\uparrow$\\ 
+    \xbidirectionalarrow{0}{1} & NN & \xbidirectionalarrow{1}{2} & NN & \xbidirectionalarrow{2}{3} & NN & \xbidirectionalarrow{3}{4} & NN & \xbidirectionalarrow{4}{5} \\
+    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & $\uparrow$\\ 
+    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & $\angless{x}{4}$\\
+  \end{tabular}
+\end{center}
+Now the softmax output at each step becomes:
+\begin{align*}
+  \angless{\hat{y}}{t}=g\left(W_y\left[\angless{\overrightarrow{a}}{t},\angless{\overleftarrow{a}}{t}\right]+b_y\right)
+\end{align*}
+\subsubsection{Deep RNN}
+\newcommand{\drnnunit}[3]{#1^{\left[#2\right]\left\langle #3\right\rangle}}
+\begin{center}
+  \begin{tabular}{ccccccccc}
+    && $\angless{y}{1}$ & & $\angless{y}{2}$ & & $\angless{y}{3}$ & & $\angless{y}{4}$\\
+    && $\uparrow$ & &  $\uparrow$ & &  $\uparrow$ & &  $\uparrow$\\
+    $\drnnunit{a}{3}{0}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{3}{1}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{3}{2}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{3}{3}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{3}{4}}$ \\
+    && $\uparrow$ & &  $\uparrow$ & &  $\uparrow$ & &  $\uparrow$\\
+    $\drnnunit{a}{2}{0}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{2}{1}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{2}{2}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{2}{3}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{2}{4}}$ \\
+    && $\uparrow$ & &  $\uparrow$ & &  $\uparrow$ & &  $\uparrow$\\
+    $\drnnunit{a}{1}{0}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{1}{1}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{1}{2}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{1}{3}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{1}{4}}$ \\
+  \end{tabular}
+\end{center}
+\begin{itemize}
+  \item To calculate the activation:
+  \begin{align*}
+    \drnnunit{a}{l}{t}=g\left(\bracketss{W_a}{l}\left[\drnnunit{a}{l}{t-1},\drnnunit{a}{l-1}{t}\right]+\bracketss{b_a}{l}\right)
+  \end{align*}
+  \item $\bracketss{W_a}{l},\bracketss{b_a}{l}$ is the same for all hidden units in the same layer.
+  \item Unlike CNN, $n_l=3$ is already deep for a DRNN.
+  \item Optionally, further layers can be added along the vertical direction in the figure above (i.e. new layers without the horizontal (temporal) connections).
+\end{itemize}
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
