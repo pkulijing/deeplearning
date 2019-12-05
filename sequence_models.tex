@@ -170,7 +170,7 @@ If a word does not belong to the vocabulary, it is replaced with a unique token 
   \[\angless{\hat{y}}{t}_i=P\left(w_i\left\vert \angless{y}{1}\angless{y}{2}\cdots \angless{y}{t-1}\right.\right)\]
   \item The input $\angless{x}{t}$ is the ${t-1}^{th}$ token $\angless{y}{t-1}$.
   \item Loss function:
-  \[\mathcal{L}=\displaystyle\sum_{t}\angless{\mathcal{L}}{t}\left(\angless{\hat{y}}{t},\angless{y}{t}\right)=-\displaystyle\sum_{t}\left[\angless{y}{t}\log\angless{\hat{y}}{t}+\left(1-\angless{y}{t}\right)\log\left(1-\angless{\hat{y}}{t}\right)\right]\]
+  \[\mathcal{L}=\displaystyle\sum_{t}\angless{\mathcal{L}}{t}\left(\angless{\hat{y}}{t},\angless{y}{t}\right)=-\displaystyle\sum_{t}\angless{y}{t}\log\angless{\hat{y}}{t}\]
   \item After training the RNN on a training set, the obtained model can calculate the probability of a sentence:
   \begin{align*}
     P\left(\angless{y}{1},\angless{y}{2},\angless{y}{3}\right)&=P\left(\angless{y}{1}\right)\cdot P\left(\angless{y}{2}\left\vert \angless{y}{1}\right.\right)\cdot P\left(\angless{y}{3}\left\vert \angless{y}{1}\angless{y}{2}\right.\right)\\
@@ -180,14 +180,14 @@ If a word does not belong to the vocabulary, it is replaced with a unique token 
   \item Sampling novel sequences: randomly sample a word according to the probability distribution indicated by $\angless{\hat{y}}{t}$, feed it to the next step, and repeat. This process leads to a randomly generated sequence of words.
 \end{itemize}
 \subsection{Solving Vanishing Gradients}
-Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN to capture long range dependencies. Exploding gradients also happen, but can be solved by gradient clipping.
+Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN to capture long range dependencies. Exploding gradients, which cause mathematical overflow and overshoot in back-propagation, also happen, but can be solved by gradient clipping.
 \subsubsection{Gated Recurrent Unit(GRU)}
 \begin{itemize}
   \item Simplified GRU: 
   \begin{align*}
     \angless{\tilde{c}}{t}&=\tanh\left(W_c\left[\angless{c}{t-1},\angless{x}{t}\right]+b_c\right)\\
     \Gamma_u&=\sigma\left(W_u\left[\angless{c}{t-1},\angless{x}{t}\right]+b_u\right)\\
-    \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\left(1-\Gamma_u\right)\ast \angless{c}{t}
+    \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\left(1-\Gamma_u\right)\ast \angless{c}{t-1}
   \end{align*}
   \begin{itemize}
     \item $c$ means memory cell. For GRU, $\angless{a}{t}=\angless{c}{t}$.
@@ -201,7 +201,7 @@ Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN t
     \angless{\tilde{c}}{t}&=\tanh\left(W_c\left[\Gamma_r\ast \angless{c}{t-1},\angless{x}{t}\right]+b_c\right)\\
     \Gamma_u&=\sigma\left(W_u\left[\angless{c}{t-1},\angless{x}{t}\right]+b_u\right)\\
     \Gamma_r&=\sigma\left(W_r\left[\angless{c}{t-1},\angless{x}{t}\right]+b_r\right)\\
-    \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\left(1-\Gamma_u\right)\ast \angless{c}{t}
+    \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\left(1-\Gamma_u\right)\ast \angless{c}{t-1}
   \end{align*}
   \begin{itemize}
     \item $\Gamma_r$ is a relevance gate controlling the relevance between $\angless{\tilde{c}}{t}$ and $\angless{c}{t-1}$.
@@ -214,7 +214,7 @@ Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN t
   \Gamma_u&=\sigma\left(W_u\left[\angless{a}{t-1},\angless{x}{t}\right]+b_u\right)\\
   \Gamma_f&=\sigma\left(W_f\left[\angless{a}{t-1},\angless{x}{t}\right]+b_f\right)\\
   \Gamma_o&=\sigma\left(W_o\left[\angless{a}{t-1},\angless{x}{t}\right]+b_o\right)\\
-  \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\Gamma_f \ast \angless{c}{t}\\
+  \angless{c}{t}&=\Gamma_u\ast \angless{\tilde{c}}{t}+\Gamma_f \ast \angless{c}{t-1}\\
   \angless{a}{t}&=\Gamma_o\ast \tanh\left(\angless{c}{t}\right)
 \end{align*}
 \begin{itemize}
@@ -261,6 +261,66 @@ Now the softmax output at each step becomes:
   \item Unlike CNN, $n_l=3$ is already deep for a DRNN.
   \item Optionally, further layers can be added along the vertical direction in the figure above (i.e. new layers without the horizontal (temporal) connections).
 \end{itemize}
+\section{NLP \& Word Embeddings}
+\newcommand{\embedding}[1]{\mathbf{e}_{#1}}
+\newcommand{\onehot}[1]{\mathbf{o}_{#1}}
+\subsection{Word Embeddings}
+\begin{itemize}
+  \item Words were represented as one-hot vectors $\onehot{i}$, whose dimension is the vocabulary size. This representation views each word as an isolated entity, failing to capture the similarities between words, e.g. orange and apple are both fruits, King and Queen are both royal, man and woman are both human, etc. 
+  \item A featurized representation called \textit{word embedding}\footnote{Each word is embedded in the n-dimensional space formed by the features, and hence the name.} that gives each word a series of feature values solves the problem. 
+  \item The features can be learned by ML, yet the learned features are generally not easy to interpret. 
+\end{itemize}
+\subsubsection{Transfer Learning}
+\begin{itemize}
+  \item Word embedding can be applied effectively to some NLP applications in combination with transfer learning:
+    \begin{enumerate}
+      \item Learn word embeddings from large text corpus (1-100B words), or download pre-trained embeddings on line.
+      \item Transfer the embedding to a new task with a smaller training set (100k words).
+      \item Optional: fine tune the embedding with new data.
+    \end{enumerate}
+  \item Transfer learning + word embedding works for: named entity recognition, text summarization, co-reference resolution, parsing. Less useful for: language modeling, machine translation.
+  \item Word embedding is similar to the Siamese network used in face encoding. The difference is that in face encoding, the NN outputs an encoding for any image, even unseen before; where as word embedding outputs a result only for words in the vocabulary.
+\end{itemize}
+\subsubsection{Analogy Reasoning}
+Analogy reasoning answers questions like: what to King is like man to woman (of course Queen). The answer can be found using word embedding:
+\begin{align*}
+  w=\text{argmax }sim\left(\embedding{w}, \embedding{king} - \embedding{man} + \embedding{woman}\right)
+\end{align*}
+in which $\embedding{w}$ is the embedding of $w$. The most widely used similarity function is cosine similarity: 
+\begin{align*}
+  sim\mathbf{(u, v)=\frac{u^{\mathsf{T}}v}{\Vert u\Vert_2\Vert v\Vert_2}}
+\end{align*}
+\subsubsection{Embedding Matrix}
+Stacking the embeddings of the whole vocabulary gives us the embedding matrix:
+\begin{align*}
+  E=\left[\embedding{1}, \embedding{2}, \cdots, \embedding{n_v}\right]
+\end{align*}
+Obviously we have
+\begin{align*}
+  E\cdot \onehot{i}=\embedding{i}
+\end{align*}
+because $\onehot{i}$ is indeed the unit vector corresponding to the $i^{th}$ column.
+\subsection{Learning Word Embeddings}
+Suppose we are building a language model using NN to predict the next word following a sequence.
+\begin{center}
+  \begin{tabular}{ccccccc}
+    I & want & a & glass & of & orange & \underline{\phantom{juice}} \\
+    4343 & 9665 & 1 & 3852 & 6163 & 6257 & 
+  \end{tabular}
+\end{center}
+We can build the following NN to solve the problem:
+\begin{center}
+  \begin{tabular}{cccccc}
+    I & $\onehot{4343}$ & $\xrightarrow{E}$ & $\embedding{4343}$ & \multirow{6}{*}{$\boxed{\makecell{\circ\\\circ\\\circ\\\circ}}$} & \multirow{6}{*}{softmax}\\  
+    want & $\onehot{9665}$ & $\xrightarrow{E}$ & $\embedding{9665}$ \\
+    a & $\onehot{1}$ & $\xrightarrow{E}$ & $\embedding{1}$  \\
+    glass & $\onehot{3852}$ & $\xrightarrow{E}$ & $\embedding{3852}$ \\ 
+    of & $\onehot{6163}$ & $\xrightarrow{E}$ & $\embedding{6163}$  \\
+    orange & $\onehot{6257}$ & $\xrightarrow{E}$ & $\embedding{4343}$ \\  
+  \end{tabular}
+\end{center}
+\subsubsection{Word2Vec}
+
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
