@@ -4,6 +4,7 @@
 \fi
 \newcommand{\angless}[2]{#1^{\left\langle #2\right\rangle}}
 \newcommand{\bracketss}[2]{#1^{\left[ #2\right]}}
+\newcommand{\vect}[1]{\mathbf{\boldsymbol{#1}}}
 \chapter{Sequence Models}
 Examples of sequence model use cases:
 \begin{itemize}
@@ -261,14 +262,15 @@ Now the softmax output at each step becomes:
   \item Unlike CNN, $n_l=3$ is already deep for a DRNN.
   \item Optionally, further layers can be added along the vertical direction in the figure above (i.e. new layers without the horizontal (temporal) connections).
 \end{itemize}
-\section{NLP \& Word Embeddings}
+\section{Word Embeddings}
 \newcommand{\embedding}[1]{\mathbf{e}_{#1}}
 \newcommand{\onehot}[1]{\mathbf{o}_{#1}}
-\subsection{Word Embeddings}
+\subsection{What is Word Embeddings}
 \begin{itemize}
   \item Words were represented as one-hot vectors $\onehot{i}$, whose dimension is the vocabulary size. This representation views each word as an isolated entity, failing to capture the similarities between words, e.g. orange and apple are both fruits, King and Queen are both royal, man and woman are both human, etc. 
   \item A featurized representation called \textit{word embedding}\footnote{Each word is embedded in the n-dimensional space formed by the features, and hence the name.} that gives each word a series of feature values solves the problem. 
-  \item The features can be learned by ML, yet the learned features are generally not easy to interpret. 
+  \item The features can be learned by ML, yet the learned features are generally not easy to interpret. Assuming that interpretable features do exist, the learned embeddings are probabibly their linear combinations.
+  \item \textit{t-SNE} is a technique used to visualize word embeddings on a 2D place via non-linear dimension reduction. 
 \end{itemize}
 \subsubsection{Transfer Learning}
 \begin{itemize}
@@ -301,14 +303,14 @@ Obviously we have
 \end{align*}
 because $\onehot{i}$ is indeed the unit vector corresponding to the $i^{th}$ column.
 \subsection{Learning Word Embeddings}
-Suppose we are building a language model using NN to predict the next word following a sequence.
+A feasible method to learn word embeddings is to build a language model. Suppose we are building a language model using NN to predict the next word following a sequence.
 \begin{center}
   \begin{tabular}{ccccccc}
     I & want & a & glass & of & orange & \underline{\phantom{juice}} \\
     4343 & 9665 & 1 & 3852 & 6163 & 6257 & 
   \end{tabular}
 \end{center}
-We can build the following NN to solve the problem:
+Suppose $E$ is the embedding matrix (300$\times$10000, 300-dimension encoding, 10000-word vocabulary). We can build the following NN, in which $E$ becomes parameters, to solve the problem:
 \begin{center}
   \begin{tabular}{cccccc}
     I & $\onehot{4343}$ & $\xrightarrow{E}$ & $\embedding{4343}$ & \multirow{6}{*}{$\boxed{\makecell{\circ\\\circ\\\circ\\\circ}}$} & \multirow{6}{*}{softmax}\\  
@@ -319,8 +321,81 @@ We can build the following NN to solve the problem:
     orange & $\onehot{6257}$ & $\xrightarrow{E}$ & $\embedding{4343}$ \\  
   \end{tabular}
 \end{center}
-\subsubsection{Word2Vec}
+Here we are using a \textit{historical window} of size 6, i.e. we would like to predict a word according to the preceding 6 words. The NN takes a 6$\times$300=1800 dimensional input. Besides the embedding matrix, it also has parameters $\bracketss{W}{1,2}, \bracketss{b}{1,2}$ for the NN layer and the softmax output.
 
+The language model built above uses the preceding 6 words as the context of the prediction and the following word as the target of it. Other choices are available. For example, the 4 words on the left \& right, the preceding 1 word, 1 word nearby, etc.
+\subsubsection{Word2Vec (Skip-Grams Model)}
+\begin{itemize}
+  \item Model construction: a word is randomly selected as the context, and another word beside it (in a $\pm n$ window, $n$ could be 5, 10, etc). Such context-target pairs form a training set for a supervised learning problem whose goal is to learn good word embeddings. The result doesn't necessarily do well in the supervised learning problem per se.
+\begin{align*}
+  \onehot{c}\xrightarrow{E}\embedding{c}=E\cdot\onehot{c}\xrightarrow{softmax}\hat{y}
+\end{align*}
+\item Output and loss function of the softmax:
+\begin{align*}
+  p\left(t\vert c\right)&=\frac{e^{\vect{\theta}_{t}^{\mathsf{T}}\embedding{c}}}{\displaystyle\sum_{j=1}^{n_v}e^{\vect{\theta}_{j}^{\mathsf{T}}\embedding{c}}}\\
+  \mathcal{L}\left(\hat{y},y\right)&=\displaystyle\sum_{i=1}^{n_v}y_i\log\hat{y}_i
+\end{align*}
+$\vect{\theta}_{t}$ is a vector of parameters for each word in the vocabulary.
+\item Efficiency issue: the model suffers from efficiency issue caused by the softmax classification. The sum over the vocabulary makes it slow. \textit{Hierarchical softmax classification} solves the problem by completing the classification in multiple steps following a binary-tree style structure, which reduces the average time complexity of the calculation from $O\left(n_v\right)$ to $O\left(\log\left(n_v\right)\right)$\footnote{In practice the binary tree is not necessarily perfectly balanced.}.
+\item Context selection: in practice, the context is not selected at random. Various heuristics are used in order to avoid common words like ``the, of, a'' get selected too frequently.
+\end{itemize}
+\subsubsection{Negative Sampling}
+Negative sampling algorithm creates a new supervised learning problem whose goal is to tell if a given pair of words form a context-target pair. For each context word, a group of training examples contains 1 positive example and $k$ negative examples\footnote{$k=2\sim 5$ for small training set, $5\sim20$ for big training set, as proposed by the original author.}.
+\begin{center}
+  \begin{tabular}{ccc}
+    context ($c$) & word ($t$) & target \\
+    orange & juice & 1\\
+    orange & king & 0\\
+    orange & book & 0\\
+    orange & the & 0\\
+    orange & of & 0
+  \end{tabular}
+\end{center}
+Instead of having one giant softmax output, a logistic regression is available for every word $t$ in the vocabulary:
+\begin{align*}
+  P\left(y=1|c,t\right)=\sigma\left(\vect{\theta}_{t}^{\mathsf{T}}\embedding{c}\right)
+\end{align*}
+With the choice of training examples above, we are only training $k+1$ such logistic regressions for each context word $c$.
+
+Sampling methods of the negative examples:
+\begin{itemize}
+  \item According to empirical frequencies of the words: $f\left(w_i\right)$. Problem: a lot of ``the, of, a, and''.
+  \item Uniformly among vocabulary words: $\frac{1}{n_v}$. Problem: does not reflect real-world distribution of words.
+  \item Mixture: $\frac{f\left(w_i\right)^{3/4}}{\sum_{j=1}^{n_v}f\left(w_j\right)^{3/4}}$ proposed by the original authors.
+\end{itemize}
+\subsubsection{GloVe}
+GloVe: global vectors for word representation. Let $X_{ij}$ represent the number of times $j$ appears in $i$'s context.
+The target of the algorithm is to minimize 
+\begin{align*}
+  \displaystyle\sum_{i=1}^{n_v}\displaystyle\sum_{j=1}^{n_v}f\left(X_{ij}\right)\left(\vect{\theta}_{i}^{\mathsf{T}}\embedding{j}+b_i+b'_j-\log X_{ij}\right)^2
+\end{align*}
+$f\left(X_{ij}\right)$ is a weight term that
+\begin{itemize}
+  \item Handles case of $X_{ij}=0$ ($\log X_{ij}$ is undefined). In such case $f\left(X_{ij}\right)=0$.
+  \item Balances weights of high-frequency words and low-frequency words.
+\end{itemize}
+In this algorithm, $\vect{\theta}_{i}$ and $\embedding{j}$ play a symmetric role. Their average can be used as the final outputted embedding:
+\begin{align*}
+  \embedding{i}^{final}=\frac{\embedding{i}+\vect{\theta}_{i}}{2}
+\end{align*}
+\subsection{Applications}
+\subsubsection{Sentiment Classification}
+From customer's comments on a restaurant, classify their sentiment in terms of $1\sim 5$ stars.
+\begin{itemize}
+  \item Simple softmax model: average embeddings of all words in a comment and apply softmax to it. 
+  \begin{itemize}
+  \item Problem: ignores order of words. For example: \textit{Completely lacking in good taste, good service, and good ambience} will be classified as a high-star comment for all the \textit{good}s, but is actually a 1-star comment. 
+  \end{itemize}
+  \item Use many-to-one RNN: use the words as the input sequence of RNN, output a sentiment in the end.
+\end{itemize}
+\subsubsection{Debiasing Word Embeddings}
+Word embeddings can reflect gender, ethnicity, age, sexual orientation and other biases of the text used to train the model. These biases should be reduced.
+\begin{enumerate}
+  \item Identify bias direction. For gender bias, we can obtain the bias direction by averaging a series of difference vectors between sexually opposite pairs of words: $\embedding{he}-\embedding{she}$, $\embedding{male}-\embedding{female}$, etc.
+  \item Neutralize: for every non-definitional word (examples of definitional words: he, she, grandfather, grandmother, etc), project its embedding along the non-bias directions to get rid of the bias, similar to PCA.
+  \item Equalize pairs: a series of linear algebra operations that move pairs of words in the embedding space so that their distances to supposedly neutral words are the same. For example, the distance between babysitter and grandfather/grandmother should be the same.
+\end{enumerate}
+There are generally not many definitional words that should not be neutralized and pairs that should be equalized. They can be chosen by hand.
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi
