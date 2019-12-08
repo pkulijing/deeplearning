@@ -391,9 +391,19 @@ From customer's comments on a restaurant, classify their sentiment in terms of $
 \subsubsection{Debiasing Word Embeddings}
 Word embeddings can reflect gender, ethnicity, age, sexual orientation and other biases of the text used to train the model. These biases should be reduced.
 \begin{enumerate}
-  \item Identify bias direction. For gender bias, we can obtain the bias direction by averaging a series of difference vectors between sexually opposite pairs of words: $\embedding{he}-\embedding{she}$, $\embedding{male}-\embedding{female}$, etc.
-  \item Neutralize: for every non-definitional word (examples of definitional words: he, she, grandfather, grandmother, etc), project its embedding along the non-bias directions to get rid of the bias, similar to PCA.
-  \item Equalize pairs: a series of linear algebra operations that move pairs of words in the embedding space so that their distances to supposedly neutral words are the same. For example, the distance between babysitter and grandfather/grandmother should be the same.
+  \item Identify bias direction. For gender bias, we can obtain the bias direction by averaging a series of difference vectors between sexually opposite pairs of words: $\embedding{he}-\embedding{she}$, $\embedding{male}-\embedding{female}$, etc.  
+  \[\vect{g}=\frac{1}{n_p}\displaystyle\sum_{p=1}^{n_p}\left(\embedding{w_{p1}}-\embedding{w_{p2}}\right)\]
+  \item Neutralize: for every non-definitional word (examples of definitional words: he, she, grandfather, grandmother, etc), project its embedding along the non-bias directions (i.e. into the sub-space perpendicular to the bias direction) to get rid of the bias, similar to PCA. Denote the projection of a vector $\vect{\alpha}$ along the bias direction as $\vect{\alpha}_B=\frac{\vect{\alpha^{\mathsf{T}}g}}{\Vert g\Vert^2}$, we have  
+  \[\vect{e}_{w\perp}=\embedding{w}-\vect{e}_{wB}=\embedding{w}-\frac{\embedding{w}^{\mathsf{T}}\vect{g}}{\Vert g\Vert^2}\vect{g}\]
+  \item Equalize pairs: a series of linear algebra operations that move pairs of words in the embedding space so that their distances to supposedly neutral words are the same. For example, the distance between babysitter and grandfather/grandmother should be the same. 
+  \begin{align*}
+    \vect{\mu}&=\frac{\embedding{w1}+\embedding{w2}}{2}\\
+    \vect{\mu}_{\perp}&=\vect{\mu}-\vect{\mu}_B\\
+    \embedding{w1}^{corrected}&=\vect{\mu}_{\perp}+\sqrt{1-\Vert\vect{\mu}_{\perp}\Vert^2}\frac{\left(\embedding{w1}-\vect{\mu}\right)_B}{\Vert\embedding{w1}-\vect{\mu}\Vert}=\vect{\mu}+\lambda\vect{g}\\
+    \embedding{w2}^{corrected}&=\vect{\mu}_{\perp}+\sqrt{1-\Vert\vect{\mu}_{\perp}\Vert^2}\frac{\left(\embedding{w2}-\vect{\mu}\right)_B}{\Vert\embedding{w2}-\vect{\mu}\Vert}=\vect{\mu}-\lambda\vect{g}\\
+  \end{align*}
+  in which constant\footnote{Unclear why in this form.}
+  \[\lambda=\frac{\sqrt{1-\Vert\vect{\mu}_{\perp}\Vert^2}}{\Vert\vect{g}\Vert^2}\frac{\left(\embedding{w1}-\embedding{w2}\right)^{\mathsf{T}}\vect{g}}{\Vert\embedding{w1}-\embedding{w2}\Vert}\]
 \end{enumerate}
 There are generally not many definitional words that should not be neutralized and pairs that should be equalized. They can be chosen by hand.
 \ifx\PREAMBLE\undefined
