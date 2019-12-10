@@ -5,6 +5,7 @@
 \newcommand{\angless}[2]{#1^{\left\langle #2\right\rangle}}
 \newcommand{\bracketss}[2]{#1^{\left[ #2\right]}}
 \newcommand{\vect}[1]{\mathbf{\boldsymbol{#1}}}
+\newcommand{\pcond}[2]{P\left(\left.#1\right\vert #2\right)}
 \chapter{Sequence Models}
 Examples of sequence model use cases:
 \begin{itemize}
@@ -34,20 +35,44 @@ Notation (using named entity recognition as an example):
 \end{itemize}
 \subsubsection{RNN Structure}
 \begin{center}
-  \begin{tabular}{cccccccccc}
-    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & & & $\angless{x}{T_x}$\\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron0) {$\angless{a}{0}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \ifnum\i=4
+    \node[input] (neuron\i) [right=of neuron\last] {$\cdots$};
+    \else\ifnum\i=5
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{T_x}$};
+    \node[input]  (input\i)   [below=of neuron\i]     {$\angless{x}{T_x}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{T_y}$};
+    \else
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{\i}$};
+    \node[input]  (input\i)   [below=of neuron\i]     {$\angless{x}{\i}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{\i}$};
+    \fi
+    \fi
+  }
+
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+    \ifnum\i=4
+    \else
+    \draw[thick, -latex] (input\i) -- (neuron\i);
+    \draw[thick, -latex] (neuron\i) -- (output\i);
+    \fi
+  }
+  \end{tikzpicture} 
 \end{center}
 \begin{itemize}
   \item The activation for $\angless{x}{t}$ is fed as an input for the next item in the sequence $\angless{x}{t+1}$.\footnote{Later items in the sequence are not used for making predictions. The issue will be solved by BRNN (B for bidirectional).}
   \item Parameters are shared among time steps.
   \item $\angless{a}{0}$ is a fake time 0 activation, usually all zero.
   \item Here we assume $T_x=T_y$. 
-  \end{itemize}
+\end{itemize}
 \subsubsection{Calculation}
 \begin{align*}
 \angless{a}{t}&=g_a\left(W_{aa}\angless{a}{t-1}+W_{ax}\angless{x}{t}+b_a\right)=g_a\left(W_{a}\left[\angless{a}{t-1}, \angless{x}{t}\right]+b_a\right)\\
@@ -65,82 +90,242 @@ Loss function:
   \mathcal{L}&=\displaystyle\sum_{t=1}^{T_x}\angless{\mathcal{L}}{t}\left(\angless{\hat{y}}{t}, \angless{y}{t}\right)
 \end{align*}
 \begin{center}
-  \begin{tabular}{cccccccccc}
-    & $\angless{\mathcal{L}}{1}$ & & $\angless{\mathcal{L}}{2}$ & & $\angless{\mathcal{L}}{3}$ & & & & $\angless{\mathcal{L}}{T_y}$\\
-    & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & & & $\uparrow\color{red}\downarrow$\\ 
-    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
-    & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & $\uparrow\color{red}\downarrow$ & & & & $\uparrow\color{red}\downarrow$\\ 
-    \makecell{$\xrightarrow{\angless{a}{0}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{0}}}$}& NN & \makecell{$\xrightarrow{\angless{a}{1}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{0}}}$} & NN & \makecell{$\xrightarrow{\angless{a}{2}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{2}}}$} & NN & \makecell{$\xrightarrow{\angless{a}{3}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{0}}}$} & $\cdots$ & \makecell{$\xrightarrow{\angless{a}{T_x-1}}$\\\color{red}$\xleftarrow{\hphantom{\angless{a}{T_x-1}}}$} & NN \\ 
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & & & $\angless{x}{T_x}$\\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron0) {$\angless{a}{0}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \ifnum\i=4
+    \node[input] (neuron\i) [right=of neuron\last] {$\cdots$};
+    \else\ifnum\i=5
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{T_x}$};
+    \node[input]  (input\i)   [below=of neuron\i]     {$\angless{x}{T_x}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{T_y}$};
+    \node[input]  (cost\i)    [above=of output\i]     {$\angless{\mathcal{L}}{T_y}$};
+    \else
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{\i}$};
+    \node[input]  (input\i)   [below=of neuron\i]     {$\angless{x}{\i}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{\i}$};
+    \node[input]  (cost\i)    [above=of output\i]     {$\angless{\mathcal{L}}{\i}$};
+    \fi
+    \fi
+  }
+  \node[input]    (cost)      [above=of cost3]        {$\mathcal{L}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] ($(neuron\last.east) + (0, 0.1)$) -- ($(neuron\i.west) + (0, 0.1)$);
+    \draw[thick, latex-, red] ($(neuron\last.east) + (0, -0.1)$) -- ($(neuron\i.west) + (0, -0.1)$);
+    \ifnum\i=4
+    \else
+    \draw[thick, -latex] (input\i) -- (neuron\i);
+    \draw[thick, -latex] ($(neuron\i.north) + (-0.1,0)$) -- ($(output\i.south) + (-0.1,0)$);
+    \draw[thick, latex-, red] ($(neuron\i.north) + (0.1,0)$) -- ($(output\i.south) + (0.1,0)$);
+    \draw[thick, -latex] ($(output\i.north) + (-0.1,0)$) -- ($(cost\i.south) + (-0.1,0)$);
+    \draw[thick, latex-, red] ($(output\i.north) + (0.1,0)$) -- ($(cost\i.south) + (0.1,0)$);
+    \draw[thick, -latex] ($(cost\i.north) + (-0.1, 0)$) -- (cost.south);
+    \draw[thick, latex-, red] ($(cost\i.north) + (0.1, 0)$) -- (cost.south);
+    \draw[thick, -latex, red];
+    \fi
+  }
+  \end{tikzpicture} 
 \end{center}
 \subsection{Different Types of RNN}
 \subsubsection{Many-to-many}
 The RNN we saw above is a many-to-many architecture, satisfying $T_x=T_y$:
+
 \begin{center}
-  \begin{tabular}{cccccccccc}
-    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & & & $\angless{x}{T_x}$\\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron0) {$\angless{a}{0}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \ifnum\i=4
+    \node[input] (neuron\i) [right=of neuron\last] {$\cdots$};
+    \else\ifnum\i=5
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{T_x}$};
+    \node[input]  (input\i)   [below=of neuron\i]     {$\angless{x}{T_x}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{T_y}$};
+    \else
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{\i}$};
+    \node[input]  (input\i)   [below=of neuron\i]     {$\angless{x}{\i}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{\i}$};
+    \fi
+    \fi
+  }
+
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+    \ifnum\i=4
+    \else
+    \draw[thick, -latex] (input\i) -- (neuron\i);
+    \draw[thick, -latex] (neuron\i) -- (output\i);
+    \fi
+  }
+  \end{tikzpicture} 
 \end{center}
 \subsubsection{Many-to-one}
 The assumption $T_x=T_y$ may not always hold. For example, sentiment classification is a many-to-one architecture:
 \begin{center}
-  \begin{tabular}{cccccccccc}
-    & & & & & & & & & $\hat{y}$\\
-    & & & & & & & & & $\uparrow$\\ 
-    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & & & $\angless{x}{T_x}$\\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron0) {$\angless{a}{0}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \ifnum\i=4
+    \node[input] (neuron\i) [right=of neuron\last] {$\cdots$};
+    \else\ifnum\i=5
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{T_x}$};
+    \node[input]  (input\i)   [below=of neuron\i]     {$\angless{x}{T_x}$};
+    \else
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{\i}$};
+    \node[input]  (input\i)   [below=of neuron\i]     {$\angless{x}{\i}$};
+    \fi
+    \fi
+  }
+  \node[input] (output) [above=of neuron5] {$\hat{y}$};
+  \draw[thick, -latex] (neuron5) -- (output);
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+    \ifnum\i=4
+    \else
+    \draw[thick, -latex] (input\i) -- (neuron\i);
+    \fi
+  }
+  \end{tikzpicture} 
 \end{center}
 \subsubsection{One-to-many}
 Music generation is a one-to-many architecture:
 \begin{center}
-  \begin{tabular}{cccccccccc}
-    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
-    & $\uparrow$ \\ 
-    & $x$ \\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron0) {$\angless{a}{0}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \ifnum\i=4
+    \node[input] (neuron\i) [right=of neuron\last] {$\cdots$};
+    \else\ifnum\i=5
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{T_x}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{T_y}$};
+    \else
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{\i}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{\i}$};
+    \fi
+    \fi
+  }
+  \node[input] (input) [below=of neuron1] {$x$};
+  \draw[thick, -latex] (input) -- (neuron1);
+
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+    \ifnum\i=4
+    \else
+    \draw[thick, -latex] (neuron\i) -- (output\i);
+    \fi
+  }
+  \end{tikzpicture} 
 \end{center}
 In this architecture, the output $\angless{y}{t}$ is often fed to the $t+1^{th}$ step as an input:
 \begin{center}
-  \begin{tabular}{cccccccccc}
-    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & & & $\angless{\hat{y}}{T_y}$\\
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & NN & $\xrightarrow{\angless{a}{3}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $x$ & & \color{red}$\angless{\hat{y}}{1}$ & & \color{red}$\angless{\hat{y}}{2}$ & & & & \color{red}$\angless{\hat{y}}{T_y-1}$\\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron0) {$\angless{a}{0}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \ifnum\i=4
+    \node[input]  (neuron\i) [right=of neuron\last]     {$\cdots$};
+    \node[input]  (output\i)  [above=of neuron\i]       {};
+    \else\ifnum\i=5
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{T_x}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{T_y}$};
+    \else
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{\i}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{\i}$};
+    \fi
+    \fi
+  }
+  \node[input]  (input1)   [below=of neuron1]     {$x$};
+  
+  \draw[thick, -latex] (input1) -- (neuron1);
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+    \ifnum\i=4
+    \else
+    \draw[thick, -latex] (neuron\i) -- (output\i);
+    \fi
+    \ifnum\i<5
+    \draw[thick, -latex, red] (output\i.east) .. controls +(360:5mm) and +(240:18mm) .. ($(neuron\next.south)+(-0.1,0)$);
+    \fi
+  }
+  \end{tikzpicture} 
 \end{center}
 \subsubsection{One-to-one}
 One-to-one structure is a simple standard NN(no actual RNN):
 \begin{center}
-  \begin{tabular}{c}
-    $\angless{\hat{y}}{1}$\\
-    $\uparrow$\\ 
-    NN\\
-    $\uparrow$\\ 
-    $\angless{x}{1}$ 
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[neuron] (neuron)  {$\angless{a}{1}$};
+  \node[input]  (input)   [below=of neuron] {$\angless{x}{1}$};
+  \node[input]  (output)  [above=of neuron] {$\angless{y}{1}$};
+  
+  \draw[thick, -latex] (input) -- (neuron);
+  \draw[thick, -latex] (neuron) -- (output);
+  \end{tikzpicture}
 \end{center}
 \subsubsection{Many-to-many(machine translation)}
 Machine translation uses a special many-to-many architecture:
 \begin{center}
-  \begin{tabular}{cccccccc}
-    $\xrightarrow{\angless{a}{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & $\cdots$ & $\xrightarrow{\angless{a}{T_x-1}}$ & NN \\ 
-    & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$ \\
-    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & & & $\angless{x}{T_x}$ \\\arrayrulecolor{red}\hline
-    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & & & $\angless{\hat{y}}{T_y}$\\
-    & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\
-    $\xrightarrow{\angless{a}{T_x}}$ & NN & $\xrightarrow{\angless{a}{T_x+1}}$ & NN & $\xrightarrow{\angless{a}{T_x+2}}$ &  $\cdots$ & $\xrightarrow{\angless{a}{T_x+T_y-1}}$ & NN \\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]   (neuron0) {$\angless{a}{0}$};
+  \node[neuron]  (neuron1) [right=of neuron0] {$\angless{a}{1}$};
+  \node[neuron]  (neuron2) [right=of neuron1] {$\angless{a}{2}$};
+  \node[input]   (neuron3) [right=of neuron2] {$\cdots$};
+  \node[neuron]  (neuron4) [right=of neuron3] {$\angless{a}{T_x}$};
+  \node[neuron]  (neuron5) [right=of neuron4] {$\angless{a'}{1}$};
+  \node[neuron]  (neuron6) [right=of neuron5] {$\angless{a'}{2}$};
+  \node[input]   (neuron7) [right=of neuron6] {$\cdots$};
+  \node[neuron]  (neuron8) [right=of neuron7] {$\angless{a'}{T_y}$};
+
+  \node[input]   (input1)  [below=of neuron1] {$\angless{x}{1}$};
+  \node[input]   (input2)  [below=of neuron2] {$\angless{x}{2}$};
+  \node[input]   (input4)  [below=of neuron4] {$\angless{x}{T_x}$};
+  
+  \node[input]   (output5) [above=of neuron5] {$\angless{y}{1}$};
+  \node[input]   (output6) [above=of neuron6] {$\angless{y}{2}$};
+  \node[input]   (output8) [above=of neuron8] {$\angless{y}{T_y}$};
+  
+
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,8} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+  }
+  \foreach \i in {1,2,4} {
+    \draw[thick, -latex] (input\i) -- (neuron\i);
+  }
+  \foreach \i in {5,6,8} {
+    \draw[thick, -latex] (neuron\i) -- (output\i);
+  }
+  \end{tikzpicture} 
 \end{center}
 It comprises an encoder ($1\sim T_x$) and a decoder ($T_x+1\sim T_x+T_y$).
 \subsection{Language Model \& Sequence Generation}
@@ -158,13 +343,40 @@ To build a language model using RNN, the training set is a corpus\footnote{NLP t
 \footnotetext{EOS means end of sentence.}
 If a word does not belong to the vocabulary, it is replaced with a unique token UNK, which stands for unknown words. After the tokenization, we build an RNN to model the chance of different sequences:
 \begin{center}
-  \begin{tabular}{cccccccc}
-    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & & & $\angless{\hat{y}}{9}$\\
-    & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    $\xrightarrow{\angless{a}{0}=\mathbf{0}}$& NN & $\xrightarrow{\angless{a}{1}}$ & NN & $\xrightarrow{\angless{a}{2}}$ & $\cdots$ & $\xrightarrow{\angless{a}{8}}$ & NN \\ 
-    & $\uparrow$ & & $\uparrow$ & & & & $\uparrow$\\ 
-    & $\angless{x}{1}=\mathbf{0}$ & & $\angless{x}{2}=\angless{\hat{y}}{1}$ & & & & $\angless{x}{9}=\angless{\hat{y}}{8}$\\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron0) {$\angless{a}{0}=\mathbf{0}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \ifnum\i=4
+    \node[input]  (neuron\i) [right=of neuron\last]     {$\cdots$};
+    \node[input]  (output\i)  [above=of neuron\i]       {};
+    \else\ifnum\i=5
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{9}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{9}$};
+    \else
+    \node[neuron] (neuron\i)  [right=of neuron\last]  {$\angless{a}{\i}$};
+    \node[input]  (output\i)  [above=of neuron\i]     {$\angless{\hat{y}}{\i}$};
+    \fi
+    \fi
+  }
+  \node[input]  (input1)   [below=of neuron1]     {$\angless{x}{1}=\mathbf{0}$};
+  
+  \draw[thick, -latex] (input1) -- (neuron1);
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+    \ifnum\i=4
+    \else
+    \draw[thick, -latex] (neuron\i) -- (output\i);
+    \fi
+    \ifnum\i<5
+    \draw[thick, -latex, red] (output\i.east) .. controls +(360:5mm) and +(240:18mm) .. ($(neuron\next.south)+(-0.1,0)$);
+    \fi
+  }
+  \end{tikzpicture} 
 \end{center}
 \begin{itemize}
   \item $\angless{\hat{y}}{t}$ is a softmax output representing the conditional probability distribution of the $t^{th}$ word given the first $t-1$ words. It's a vector whose dimension is the vocabulary size.
@@ -226,15 +438,37 @@ Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN t
 Using the standard RNN, including GRU and LSTM as building blocks, we can build more complex RNN structures.
 \subsubsection{Bidirectional RNN(BRNN)}
 The RNNs above are uni-directional: no information from future steps is used. A BRNN solves the problem by also calculating activation from the reverse direction.
-\newcommand{\xbidirectionalarrow}[2]{\makecell{$\xrightarrow{\angless{\overrightarrow{a}}{#1}}$\\\color{red}$\xleftarrow{{\angless{\overleftarrow{a}}{#2}}}$}}
 \begin{center}
-  \begin{tabular}{ccccccccc}
-    & $\angless{\hat{y}}{1}$ & & $\angless{\hat{y}}{2}$ & & $\angless{\hat{y}}{3}$ & & $\angless{\hat{y}}{4}$\\
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & $\uparrow$\\ 
-    \xbidirectionalarrow{0}{1} & NN & \xbidirectionalarrow{1}{2} & NN & \xbidirectionalarrow{2}{3} & NN & \xbidirectionalarrow{3}{4} & NN & \xbidirectionalarrow{4}{5} \\
-    & $\uparrow$ & & $\uparrow$ & & $\uparrow$ & & $\uparrow$\\ 
-    & $\angless{x}{1}$ & & $\angless{x}{2}$ & & $\angless{x}{3}$ & & $\angless{x}{4}$\\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron0) {$\angless{a}{0}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,8} {
+    \pgfmathtruncatemacro{\index}{(\i+1)/2}
+    \ifodd\i
+    \node[neuron] (neuron\i) [right=of neuron\last]{$\angless{\overleftarrow{a}}{\index}$};
+    \node[input] (input\index) [below right=0.5cm and -0.3cm of neuron\i] {$\angless{x}{\index}$};
+    \node[input] (output\index) [above right=0.5cm and -0.3cm of neuron\i] {$\angless{\hat{y}}{\index}$};
+    \else
+    \node[neuron] (neuron\i) [right=0.1cm of neuron\last]{$\angless{\overrightarrow{a}}{\index}$};
+    \fi
+  }
+  \node[input] (neuron9) [right=of neuron8] {$\angless{a}{5}$};
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,4} {
+    \pgfmathtruncatemacro{\righti}{\i*2}
+    \pgfmathtruncatemacro{\lefti}{\i*2-1}
+    \pgfmathtruncatemacro{\lastrighti}{\i*2-2}
+    \pgfmathtruncatemacro{\nextlefti}{\i*2+1}
+    \draw[thick, -latex, red]   (input\i) -- (neuron\lefti);
+    \draw[thick, -latex, green] (input\i) -- (neuron\righti);
+    \draw[thick, -latex, red]   (neuron\lefti) -- (output\i);
+    \draw[thick, -latex, green] (neuron\righti) -- (output\i);
+    \draw[thick, -latex, red]   (neuron\nextlefti.south) to [bend left=20] (neuron\lefti.south);
+    \draw[thick, latex-, green] (neuron\righti.south) to [bend left=20] (neuron\lastrighti.south);
+  }
+  \end{tikzpicture}
 \end{center}
 Now the softmax output at each step becomes:
 \begin{align*}
@@ -243,15 +477,29 @@ Now the softmax output at each step becomes:
 \subsubsection{Deep RNN}
 \newcommand{\drnnunit}[3]{#1^{\left[#2\right]\left\langle #3\right\rangle}}
 \begin{center}
-  \begin{tabular}{ccccccccc}
-    && $\angless{y}{1}$ & & $\angless{y}{2}$ & & $\angless{y}{3}$ & & $\angless{y}{4}$\\
-    && $\uparrow$ & &  $\uparrow$ & &  $\uparrow$ & &  $\uparrow$\\
-    $\drnnunit{a}{3}{0}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{3}{1}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{3}{2}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{3}{3}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{3}{4}}$ \\
-    && $\uparrow$ & &  $\uparrow$ & &  $\uparrow$ & &  $\uparrow$\\
-    $\drnnunit{a}{2}{0}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{2}{1}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{2}{2}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{2}{3}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{2}{4}}$ \\
-    && $\uparrow$ & &  $\uparrow$ & &  $\uparrow$ & &  $\uparrow$\\
-    $\drnnunit{a}{1}{0}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{1}{1}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{1}{2}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{1}{3}}$ & $\rightarrow$ & $\boxed{\drnnunit{a}{1}{4}}$ \\
-  \end{tabular}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]  (neuron10) {$\drnnunit{a}{1}{0}$};
+  \node[input]  (neuron20) [above=of neuron10] {$\drnnunit{a}{2}{0}$};
+  \node[input]  (neuron30) [above=of neuron20] {$\drnnunit{a}{3}{0}$};
+  
+  \foreach \i [remember=\i as \lasti (initially 0)] in {1,2,3} {
+    \foreach \j [remember=\j as \lastj (initially 0)] in {1,2,3,4} {
+      \node[neuron] (neuron\i\j) [right=of neuron\i\lastj] {$\drnnunit{a}{\i}{\j}$};
+      \draw[thick, -latex] (neuron\i\lastj) -- (neuron\i\j);
+    }
+  }
+  \foreach \j in {1,2,3,4} {
+    \node[input] (neuron4\j) [above=of neuron3\j] {$\angless{\hat{y}}{\j}$};
+    \foreach \i in {1,2,3} {
+      \pgfmathtruncatemacro{\nexti}{\i+1}
+      \draw[thick, -latex] (neuron\i\j) -- (neuron\nexti\j);
+    }
+  }
+  \end{tikzpicture}
 \end{center}
 \begin{itemize}
   \item To calculate the activation:
@@ -269,7 +517,7 @@ Now the softmax output at each step becomes:
 \begin{itemize}
   \item Words were represented as one-hot vectors $\onehot{i}$, whose dimension is the vocabulary size. This representation views each word as an isolated entity, failing to capture the similarities between words, e.g. orange and apple are both fruits, King and Queen are both royal, man and woman are both human, etc. 
   \item A featurized representation called \textit{word embedding}\footnote{Each word is embedded in the n-dimensional space formed by the features, and hence the name.} that gives each word a series of feature values solves the problem. 
-  \item The features can be learned by ML, yet the learned features are generally not easy to interpret. Assuming that interpretable features do exist, the learned embeddings are probabibly their linear combinations.
+  \item The features can be learned by ML, yet the learned features are generally not easy to interpret. Assuming that interpretable features do exist, the learned embeddings are probably their linear combinations.
   \item \textit{t-SNE} is a technique used to visualize word embeddings on a 2D place via non-linear dimension reduction. 
 \end{itemize}
 \subsubsection{Transfer Learning}
@@ -286,7 +534,7 @@ Now the softmax output at each step becomes:
 \subsubsection{Analogy Reasoning}
 Analogy reasoning answers questions like: what to King is like man to woman (of course Queen). The answer can be found using word embedding:
 \begin{align*}
-  w=\text{argmax }sim\left(\embedding{w}, \embedding{king} - \embedding{man} + \embedding{woman}\right)
+  w=\argmax sim\left(\embedding{w}, \embedding{king} - \embedding{man} + \embedding{woman}\right)
 \end{align*}
 in which $\embedding{w}$ is the embedding of $w$. The most widely used similarity function is cosine similarity: 
 \begin{align*}
@@ -406,6 +654,229 @@ Word embeddings can reflect gender, ethnicity, age, sexual orientation and other
   \[\lambda=\frac{\sqrt{1-\Vert\vect{\mu}_{\perp}\Vert^2}}{\Vert\vect{g}\Vert^2}\frac{\left(\embedding{w1}-\embedding{w2}\right)^{\mathsf{T}}\vect{g}}{\Vert\embedding{w1}-\embedding{w2}\Vert}\]
 \end{enumerate}
 There are generally not many definitional words that should not be neutralized and pairs that should be equalized. They can be chosen by hand.
+\section{Sequence to Sequence Models}
+\subsection{Basic Models}
+\subsubsection{Machine Translation}
+Machine translation uses an encoder network and a decoder network.
+\begin{center}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]   (neuron0) {$\angless{a}{0}$};
+  \node[neuron]  (neuron1) [right=of neuron0] {$\angless{a}{1}$};
+  \node[neuron]  (neuron2) [right=of neuron1] {$\angless{a}{2}$};
+  \node[input]   (neuron3) [right=of neuron2] {$\cdots$};
+  \node[neuron]  (neuron4) [right=of neuron3] {$\angless{a}{T_x}$};
+  \node[neuron]  (neuron5) [right=of neuron4] {$\angless{a'}{1}$};
+  \node[neuron]  (neuron6) [right=of neuron5] {$\angless{a'}{2}$};
+  \node[input]   (neuron7) [right=of neuron6] {$\cdots$};
+  \node[neuron]  (neuron8) [right=of neuron7] {$\angless{a'}{T_y}$};
+
+  \node[input]   (input1)  [below=of neuron1] {$\angless{x}{1}$};
+  \node[input]   (input2)  [below=of neuron2] {$\angless{x}{2}$};
+  \node[input]   (input4)  [below=of neuron4] {$\angless{x}{T_x}$};
+  
+  \node[input]   (output5) [above=of neuron5] {$\angless{y}{1}$};
+  \node[input]   (output6) [above=of neuron6] {$\angless{y}{2}$};
+  \node[input]   (output7) [above=of neuron7] {};
+  \node[input]   (output8) [above=of neuron8] {$\angless{y}{T_y}$};
+  
+
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,8} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+  }
+  \foreach \i in {1,2,4} {
+    \draw[thick, -latex] (input\i) -- (neuron\i);
+  }
+  \foreach \i in {5,6,8} {
+    \draw[thick, -latex] (neuron\i) -- (output\i);
+  }
+  \foreach \i in {5,6,7} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (output\i.east) .. controls +(360:5mm) and +(240:18mm) .. ($(neuron\next.south)+(-0.1,0)$);
+  }
+  \draw[dashed, red] (6, -1.5) -- (6, 1.5);
+  \end{tikzpicture} 
+\end{center}
+\begin{itemize}
+  \item The decoder network in the machine translation architecture is similar to the language model architecture, except that it uses the output of the encoder network, i.e. the encoded representation of the input sentence, instead of 0 as initial input. It is a conditional language model that models the output translation under the condition of the input sentence. 
+  \item From the POV of probability, this conditional model captures the conditional probability distribution of the output translation given the input sentence:
+  \[\pcond{\angless{y}{1}\cdots\angless{y}{T_y}}{\angless{x}{1}\cdots\angless{x}{T_x}}\]
+  \item In language model, we randomly sampled the output according to the probability distribution. For machine translation, we would like to output the best translation, i.e. to obtain
+  \[\displaystyle\argmax_{\angless{y}{1}\cdots\angless{y}{T_y}} \pcond{\angless{y}{1}\cdots\angless{y}{T_y}}{\angless{x}{1}\cdots\angless{x}{T_x}}\]
+  \item Greedy search won't give the correct answer. Other search algorithms should be used.
+\end{itemize}
+\subsubsection{Image Captioning}
+Image captioning can be completed using a similar structure. A pre-trained image encoder is used as the encoder network, whose output feature vector is fed into the decoder network. 
+\begin{center}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[input]   (neuron0) {Image};
+  \node[neuron]  (neuron1) [right=of neuron0] {$\makecell{\circ\\\circ\\\circ}$};
+  \node[neuron]  (neuron2) [right=of neuron1] {$\angless{a'}{1}$};
+  \node[neuron]  (neuron3) [right=of neuron2] {$\angless{a'}{2}$};
+  \node[input]   (neuron4) [right=of neuron3] {$\cdots$};
+  \node[neuron]  (neuron5) [right=of neuron4] {$\angless{a'}{T_y}$};
+  
+  \node[input]   (output2) [above=of neuron2] {$\angless{y}{1}$};
+  \node[input]   (output3) [above=of neuron3] {$\angless{y}{2}$};
+  \node[input]   (output4) [above=of neuron4] {};
+  \node[input]   (output5) [above=of neuron5] {$\angless{y}{T_y}$};
+  
+
+  \foreach \i [remember=\i as \last (initially 0)] in {1,...,5} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (neuron\last) -- (neuron\i);
+  }
+  \foreach \i in {2,3,5} {
+    \draw[thick, -latex] (neuron\i) -- (output\i);
+  }
+  \foreach \i in {2,3,4} {
+    \pgfmathtruncatemacro{\next}{\i+1}
+    \draw[thick, -latex] (output\i.east) .. controls +(360:5mm) and +(240:18mm) .. ($(neuron\next.south)+(-0.1,0)$);
+  }
+  \draw[dashed, red] (1.8, -1.5) -- (1.8, 1.5);
+  \end{tikzpicture} 
+\end{center}
+\subsection{Beam Search}
+Beam search is an variation of greedy search that considers more options than the most probable one at each step. It's a heuristic algorithm that runs fast but does not guarantee finding the optimal solution. We will illustrate beam search with the machine translation example.
+\begin{itemize}
+  \item Parameter $B$, i.e. the \textit{beam width} controls the number of options considered at each step. 
+  \item Denote the combination of the encoder network and the first $k$ layers of the decoder network as $M_k$. Obviously, $M_k$ constitutes a language model that outputs
+\[\angless{P}{k}=\pcond{\angless{y}{k}}{x\angless{y}{1}\cdots\angless{y}{k-1}}\]
+  In general we have the induction:
+  \begin{align*}
+    \pcond{\angless{y}{1}\cdots\angless{y}{k}}{x}&=\pcond{\angless{y}{k}}{x\angless{y}{1}\cdots\angless{y}{k-1}}\pcond{\angless{y}{1}\cdots\angless{y}{k-1}}{x}\\
+    &=\angless{P}{k}\pcond{\angless{y}{1}\cdots\angless{y}{k-1}}{x}\\
+    &=\angless{P}{k}\angless{P}{k-1}\pcond{\angless{y}{1}\cdots\angless{y}{k-2}}{x}=\cdots\\
+    &=\displaystyle\prod_{t=1}^k\angless{P}{t}
+  \end{align*}
+  \item The operation of beam search:
+  \begin{itemize}
+    \item Step 1: we store $B$ values of $\angless{y}{1}$ corresponding to the $B$ components of $M_1$'s softmax output with the largest values. These $\angless{y}{1}$ values maximize $\pcond{\angless{y}{1}}{x}$. 
+    \item Step 2: we have $B$ versions of $M_2$, each taking an $\angless{y}{1}$ value from step 1 and feeding it to the output layer. We examine the $B\times n_v$ softmax output components, select the largest $B$ of them and store the corresponding $\angless{y}{1}\angless{y}{2}$ combinations. These $\angless{y}{1}\angless{y}{2}$ combinations maximize $\pcond{\angless{y}{1}\angless{y}{2}}{x}$.
+    \item In general, at step $k$ $(k\ge 2)$ , we examine $B\times n_v$ softmax output components of $B$ versions of $M_k$, select the largest $B$ of them and store the corresponding $\angless{y}{1}\cdots\angless{y}{k}$ combinations. These combinations maximize $\pcond{\angless{y}{1}\cdots\angless{y}{k}}{x}$.
+  \end{itemize}
+  \item When $B=1$, beam search degenerates to greedy search. Larger $B$: better result, slower, more computational resource; smaller $B$: worse result, faster, less computational resource.
+\end{itemize}
+\subsubsection{Refinements}
+\begin{itemize}
+\item Prevent underflow: $\angless{P}{k}$ is usually a small positive value. Multiplying a lot of $\angless{P}{k}$ results in an even smaller value, possibly causing numerical underflow. The solution is to take the logarithm of the probability values:
+\[\displaystyle\argmax_{y}\displaystyle\sum_{t=1}^{T_y}\log\angless{P}{t}=\displaystyle\argmax_{y}\displaystyle\prod_{t=1}^{T_y}\angless{P}{t}\]
+\item Length normalization: the model above favors short translations because appending more words always reduces the probability. Thus length normalization should be applied:
+\[\displaystyle\argmax_{y}\frac{1}{T_y^{\alpha}}\displaystyle\sum_{t=1}^{T_y}\log\angless{P}{t}\]
+which is called the \textit{normalized log likelihood objective}. $\alpha$ is a tunable hyper parameter\footnote{The use of $\alpha$ is a practical hack without theoretical justification.} that can take values from 0 (no normalization) to 1 (full normalization).
+\end{itemize} 
+\subsubsection{Error Analysis}
+In case beam search fails to get a satisfactory translation, we can carry out some error analysis for improvement. Suppose $y^*$ is the human-level translation whilst $\hat{y}$ is the translation obtained by beam search. 
+\begin{itemize}
+  \item $\pcond{y^*}{x}>\pcond{\hat{y}}{x}$: problem with beam search. Tune $B$.
+  \item $\pcond{y^*}{x}\le\pcond{\hat{y}}{x}$: problem with RNN.
+\end{itemize} 
+\subsection{BLEU Score}
+\begin{itemize}
+  \item Sometimes multiple good solutions (references) exist for machine translation. BLEU (\textit{bilingual evaluation understudy}) score is a single real number measure of accuracy in such case.
+  \item Define precision as
+  \[\frac{\text{\# words in output that appear in references}}{\text{\# words in output}}\]
+  It is not a good measure for accuracy because a dummy output such as \textit{the the the the the the the} tends to have high precision.
+  \item Define modified precision as  
+  \[\frac{\text{clipped \# words in output that appear in references}}{\text{\# words in output}}\]
+  in which clipped \# means no more than sum of the maximum count of each word in any reference. For example, for the two references: \textit{The cat is on the mat} and \textit{There is a cat on the mat}, the clipped \# of \textit{the} is 2, and the modified precision of \textit{the the the the the the the} becomes $\frac{2}{7}$. 
+  \item Similar modified precisions can be defined for bi-grams, tri-grams, $\cdots$, $n$-grams.
+  \begin{align*}
+    p_1&=\frac{\displaystyle\sum_{\text{unigram}\in\hat{y}}Count_{clip}(\text{unigram})}{\displaystyle\sum_{\text{unigram}\in\hat{y}}Count(\text{unigram})}\\
+    p_n&=\frac{\displaystyle\sum_{n\text{-gram}\in\hat{y}}Count_{clip}(n\text{-gram})}{\displaystyle\sum_{\text{unigram}\in\hat{y}}Count(n\text{-gram})}
+  \end{align*}
+  \item The bleu score is defined as 
+  \[\text{BP}\exp\left(\frac{1}{4}\displaystyle\sum_{n=1}^4p_n\right)\]
+  The brevity penalty factor BP is defined as 
+  \[\text{BP}=\begin{cases}
+    1 & \text{, if }L_{MT}>L_R \\
+    \exp\left(1-L_{R}/L_{MT}\right) & \text{, otherwise }
+  \end{cases}\]
+  in which $L_R$ is the reference output length, and $L_{MT}$ is the machine translation length. BP is added because short translation tends to have higher $p_n$ values and hence should be penalized.
+\end{itemize}
+\subsection{Attention Model}
+When the sentence to translate is long, it's hard for the encoder network to store all of its information in the activation passed to the decoder network. Attention model mimics human behavior to translate the long sentence part by part. Here we use a BRNN to illustrate the idea, so the activation at step $t'$ of the encoder network is $\angless{a}{t'}=\left(\angless{\overrightarrow{a}}{t'},\angless{\overleftarrow{a}}{t'}\right)$\footnote{The prime is added to differ the encoder network from the decoder network.}.
+
+\begin{center}
+\begin{tikzpicture}[
+  neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+  input/.style={rectangle, thick, minimum size=5mm},
+  node distance=5mm and 5mm
+]
+\node[input]  (enneuron0) {$\angless{a}{0}$};
+\foreach \i [remember=\i as \last (initially 0)] in {1,...,4} {
+  \node[neuron] (enneuron\i)  [right=1cm of enneuron\last]  {$\angless{a}{\i}$};
+  \node[input]  (input\i)     [below=of enneuron\i]     {$\angless{x}{\i}$};
+  \node[input]  (add\i)       [above=1.5cm of enneuron\i]     {$\bigoplus$};
+  \node[input]  (context\i)   [above=of add\i]          {$\angless{c}{\i}$};
+  \node[neuron] (deneuron\i)  [above=of context\i]      {$\angless{s}{\i}$};
+  \node[input]  (output\i)    [above=of deneuron\i]     {$\angless{y}{\i}$};
+}
+\node[input]  (deneuron0)     [left=of deneuron1]     {$\angless{s}{0}$};
+\node[input]  (enneuron5)     [right=of enneuron4]    {$\angless{a}{5}$};
+
+\foreach \i [remember=\i as \last (initially 0)] in {1,...,4} {
+  \pgfmathtruncatemacro{\next}{\i+1}
+  \draw[thick, -latex] (input\i) -- (enneuron\i);
+  \draw[thick, -latex] (context\i) -- (deneuron\i); 
+  \draw[thick, -latex] (deneuron\i) -- (output\i);
+  \draw[thick, -latex] (deneuron\last) -- (deneuron\i);  
+  \draw[thick, -latex] (enneuron\last) -- (enneuron\i);
+  \draw[thick, -latex] (enneuron\next.west) -- (enneuron\i.east);
+  \draw[thick, -latex] (add\i) -- (context\i);
+  \draw[thick, red, -latex] (enneuron\i) -- node[near start]{$\angless{\alpha}{1,\i}$} (add1);
+  \ifnum\i > 1
+    \draw[thick, -latex] (output\last.east) .. controls +(360:5mm) and +(240:18mm) .. ($(deneuron\i.south)+(-0.1,0)$);
+    \foreach \j in {1,...,4} {
+      \draw[ultra thin, -latex] (enneuron\j) -- (add\i);
+    }
+  \fi
+}
+\end{tikzpicture} 
+\end{center}
+asaa
+\begin{itemize}
+  \item $\angless{\alpha}{t,t'}$ is the amount of attention $\angless{y}{t}$ pays to $\angless{a}{t'}$. It's a softmax combination of factors $\angless{e}{t,t'}$. Obviously $\sum_{t'}\angless{\alpha}{t,t'}=1$ for any given $t$.
+  \[
+    \angless{\alpha}{t,t'}=\frac{\exp\left(\angless{e}{t,t'}\right)}{\sum_{t'=1}^{T_x}\exp\left(\angless{e}{t,t'}\right)}
+  \]
+\item Factor $\angless{e}{t,t'}$ is learned from a neural network. It's a small network (one-layer) because the computation is done a lot.
+\begin{center}
+  \begin{tikzpicture}[
+    neuron/.style={rectangle, draw=black, thick, minimum size=5mm},
+    input/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node [input] (inputs) {$\angless{s}{t-1}$};
+  \node [input] (void) [below=of inputs] {};
+  \node [input] (inputa) [below=of void] {$\angless{a}{t'}$};
+  \node [neuron] (neuron) [right=of void] {$\makecell{\circ\\\circ\\\circ}$};
+  \node [input] (output) [right=of neuron] {$\angless{e}{t,t'}$};
+  \draw [thick, -latex] (inputs) -- (neuron);
+  \draw [thick, -latex] (inputa) -- (neuron);
+  \draw [thick, -latex] (neuron) -- (output);
+  \end{tikzpicture}
+\end{center}
+\item The context $\angless{c}{t}$, i.e. the input fed to the decoder network, is a combination of all encoder activations weighted by the attentions:
+\[\angless{c}{t}=\displaystyle\sum_{t'=1}^{T_x}\angless{\alpha}{t,t'}\angless{a}{t'}\]
+\item The algorithm takes quadratic time $O\left(T_x\cdot T_y\right)$, which is generally acceptable because sentences are not that long in machine translation.
+\end{itemize}
+\subsection{Speech Recognition}
+\begin{itemize}
+  \item Speech recognition application transforms an audio clip to the corresponding transcript.
+  \item Linguists once believed that breaking audio clips down to ``phonemes'' is the best way to do speech recognition, which has been proved unnecessary by DL.
+  \item CTC (connectionist temporal classification) cost: a many-to-many RNN with equal numbers of input and output units is used to recoginize speech, but usually the input contains much more items than the input (\# input timestamps $\gg$ \# letters in output). CTC cost makes the RNN generate output with repeated letters and a special blank character, e.g. \textit{ttt\_h\_eee\_\_\textvisiblespace\_\_\_qqq\_\_}. Repeated characters not separated by the blank character are collapsed to obtain the actual output, thus the output above is considered a correct prefix of the expected result \textit{the quick brown fox}.
+  \item Trigger word detection: target label is set to 1 right after the trigger word, and 0 elsewhere, which results in an unbalanced training set (\#0 $\gg$ \#1). A practical solution is to output a few 1s instead of a single 1 after the trigger word.
+\end{itemize}
+
 \ifx\PREAMBLE\undefined
 \end{document}
 \fi

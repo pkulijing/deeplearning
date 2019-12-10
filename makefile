@@ -6,4 +6,4 @@ LATEX=pdflatex
 .PHONY: clean
 
 clean:
-	ls | grep -v ".tex" | grep -v makefile | xargs rm
+	ls | grep -v "\.tex" | grep -v makefile | xargs rm
