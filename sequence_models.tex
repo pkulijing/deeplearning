@@ -82,6 +82,52 @@ Notation (using named entity recognition as an example):
 \item $W_a\equiv\left[W_{aa}, W_{ax}\right], W_y\equiv W_{ya}$
 \item $g_a$ is usually $\tanh$ or Relu.
 \item $g_y$ depends on output $\hat{y}$ (e.g. sigmoid for binary output).
+\item The calculation of each unit can be summarized with the following figure:
+\begin{center}
+  \begin{tikzpicture}[
+    rect/.style={rectangle, draw=black, thick, minimum size=5mm},
+    noboundary/.style={rectangle, thick, minimum size=5mm},
+    node distance=5mm and 5mm
+  ]
+  \node[noboundary]  (at1)                                {$\angless{a}{t-1}$};
+  \node[noboundary]  (prodat1waa)  [right=1cm of at1]     {$\bigotimes$};
+  \node[noboundary]  (waa)         [below=of prodat1waa]  {$W_{aa}$};
+  \node[noboundary]  (aplus)       [right=of prodat1waa]  {$\bigoplus$};
+  \node[noboundary]  (prodxtwax)   [below=of aplus]       {$\bigotimes$};
+  \node[noboundary]  (ba)          [above=of aplus]       {$b_a$};
+  \node[noboundary]  (wax)         [right=of prodxtwax]   {$W_{ax}$};
+  \node[noboundary]  (xt)          [below=of prodxtwax]   {$\angless{x}{t}$};
+  \node[rect]        (tanh)        [right=of aplus]       {$\tanh$};
+  \node[noboundary]  (at)          [right=of tanh]        {};
+  \node[noboundary]  (atout)       [right=2cm of at]      {$\angless{a}{t}$};
+  \node[noboundary]  (prodatwya)   [above=of at]          {$\bigotimes$};
+  \node[noboundary]  (wya)         [right=of prodatwya]   {$W_{ya}$};
+  \node[noboundary]  (yplus)       [above=of prodatwya]   {$\bigoplus$};
+  \node[noboundary]  (by)          [right=of yplus]       {$b_y$};
+  \node[rect]        (softmax)     [above=of yplus]       {softmax};
+  \node[noboundary]  (yt)          [above=of softmax]     {$\angless{\hat{y}}{t}$};
+  
+  \draw[-latex, thick]  (waa) -- (prodat1waa);
+  \draw[-latex, thick]  (at1) -- (prodat1waa);
+  \draw[-latex, thick]  (prodat1waa) -- (aplus);
+  \draw[-latex, thick]  (wax) -- (prodxtwax);
+  \draw[-latex, thick]  (xt) -- (prodxtwax);
+  \draw[-latex, thick]  (prodxtwax) -- (aplus);
+  \draw[-latex, thick]  (ba) -- (aplus);
+  \draw[-latex, thick]  (aplus) -- (tanh);
+  \draw[-latex, thick]  (tanh) -- (atout);
+  \draw[-latex, thick]  (at.center) -- (prodatwya);
+  \draw[-latex, thick]  (wya) -- (prodatwya);
+  \draw[-latex, thick]  (prodatwya) -- (yplus);
+  \draw[-latex, thick]  (by) -- (yplus);
+  \draw[-latex, thick]  (yplus) -- (softmax);
+  \draw[-latex, thick]  (softmax) -- (yt);
+
+  \draw[thick, red] (1.05, -1.7) rectangle (5, 1.7);
+  \draw[thick, green] (1, -1.75) rectangle (7.6, 3.7);
+
+  \end{tikzpicture} 
+\end{center}
 \end{itemize}
 \subsubsection{Backpropagation through Time}
 Loss function:
@@ -397,6 +443,48 @@ Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN t
 \subsubsection{Gated Recurrent Unit(GRU)}
 \begin{itemize}
   \item Simplified GRU: 
+  \begin{center}
+    \begin{tikzpicture}[
+      rect/.style={rectangle, draw=black, thick, minimum size=5mm},
+      gate/.style={rectangle, draw=black, thick, minimum height=9mm, minimum width=1.2cm, align=center, font=\footnotesize},
+      noboundary/.style={rectangle, thick, minimum size=7mm},
+      circ/.style={circle, draw=black, thick, minimum size=7mm},
+      node distance=5mm and 5mm
+    ]
+    \node[noboundary] (ct1)                                             {$\angless{c}{t-1}$};
+    \node[noboundary] (ct1xt)           [right=1.5cm of ct1]                  {};
+    \node[noboundary] (timesoldanchor)  [right=1cm of ct1]            {};
+    \node[noboundary] (update)          [right=1cm of timesoldanchor]   {};
+    \node[noboundary] (timesnewanchor)  [right=1cm of update]           {};
+    \node[noboundary] (tanh)            [right=2cm of update]           {};
+    \node[circ]       (timesold)        [above=1.5cm of timesoldanchor]   {$*$};
+    \node[noboundary] (xt)              [below=of ct1xt]                {$\angless{x}{t}$};
+    \node[gate]       (update_g)        [above=of update]               {update\\gate};
+    \node[gate]       (tanh_g)          [above=of tanh]                 {tanh};
+    \node[circ]       (ctplus)          [above=3cm of timesnewanchor]   {+};
+    \node[noboundary] (softmaxanchor)   [right=1.5cm of ctplus]          {};
+    \node[rect]       (softmax)         [above=of softmaxanchor]    {softmax};
+    \node[noboundary] (ctout)           [right=1.5cm of softmaxanchor]  {$\angless{c}{t}$};
+    \node[circ]       (timesnew)        [above=1.5cm of timesnewanchor]   {$*$};
+    \node[noboundary] (yt)              [above=of softmax]              {$\angless{\hat{y}}{t}$};
+    \draw[thick, -latex] (xt) -- (ct1xt.center);
+    \draw[thick, -latex] (ct1) -| node[near end, left, scale=0.7]{$\sigma$} node[near end, right, scale=0.7]{$\makecell{ W_u\\b_u}$}(update_g);
+    \draw[thick, -latex] (ct1) -| node[near end, left, scale=0.7]{$\tanh$}  node[near end, right, scale=0.7]{$\makecell{ W_c\\b_c}$}(tanh_g);
+    \draw[thick, -latex] (update_g.north) |- node[near end, above, scale=0.7]{$\angless{\Gamma_u}{t}$} (timesnew.west);
+    \draw[thick, -latex] (tanh_g.north) |- node[near end, above, scale=0.7]{$\angless{\tilde{c}}{t}$}(timesnew.east);
+    \draw[thick, -latex] (timesnew) -- (ctplus);
+    \draw[thick, -latex] (ctplus) -- (ctout);
+    \draw[thick] (softmaxanchor.center) -- (softmax);  
+    \draw[thick, -latex] (softmax) -- (yt);
+    \draw[thick, -latex] (timesoldanchor.center) -- (timesold);
+    \draw[thick, -latex] (update_g.north) |- node[near end, above, scale=0.7]{$1-\angless{\Gamma_u}{t}$} (timesold.east);
+    \draw[thick, -latex] (timesold.north) |- (ctplus.west);
+    
+    \draw[thick, red] (1.05, -0.5) rectangle (8.95, 4.3);
+    \draw[thick, green] (1, -0.55) rectangle (9, 5.3);
+
+    \end{tikzpicture} 
+  \end{center}
   \begin{align*}
     \angless{\tilde{c}}{t}&=\tanh\left(W_c\left[\angless{c}{t-1},\angless{x}{t}\right]+b_c\right)\\
     \Gamma_u&=\sigma\left(W_u\left[\angless{c}{t-1},\angless{x}{t}\right]+b_u\right)\\
@@ -410,6 +498,55 @@ Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN t
     \item $\angless{c}{t}, \angless{\tilde{c}}{t}, \Gamma_u$ are vectors of the same dimension. $\ast$ is element-wise multiplication.
   \end{itemize}
   \item Full GRU:
+  \begin{center}
+    \begin{tikzpicture}[
+      rect/.style={rectangle, draw=black, thick, minimum size=5mm},
+      gate/.style={rectangle, draw=black, thick, minimum height=9mm, minimum width=1.2cm, align=center, font=\footnotesize},
+      noboundary/.style={rectangle, thick, minimum size=7mm},
+      circ/.style={circle, draw=black, thick, minimum size=7mm},
+      node distance=5mm and 5mm
+    ]
+    \node[noboundary] (ct1)                                             {$\angless{c}{t-1}$};
+    \node[noboundary] (ct1xt)           [right=1.5cm of ct1]            {};
+    \node[noboundary] (timesoldanchor)  [right=1cm of ct1]              {};
+    \node[noboundary] (update)          [right=1cm of timesoldanchor]   {};
+    \node[noboundary] (relevance)       [right=1cm of update]           {};
+    \node[circ]       (timesnewanchor)  [right=1cm of relevance]        {$*$};
+    \node[noboundary] (tanh)            [right=1cm of timesnewanchor]   {};
+    \node[circ]       (timesold)        [above=1.5cm of timesoldanchor] {$*$};
+    \node[noboundary] (xt)              [below=of ct1xt]                {$\angless{x}{t}$};
+    \node[gate]       (update_g)        [above=of update]               {update\\gate};
+    \node[gate]       (relevance_g)     [above=of relevance]            {relevance\\gate};
+    \node[gate]       (tanh_g)          [above=of tanh]                 {tanh};
+    \node[circ]       (ctplus)          [above=3cm of timesnewanchor]   {+};
+    \node[noboundary] (softmaxanchor)   [right=1.5cm of ctplus]         {};
+    \node[rect]       (softmax)         [above=of softmaxanchor]        {softmax};
+    \node[noboundary] (ctout)           [right=1.5cm of softmaxanchor]  {$\angless{c}{t}$};
+    \node[circ]       (timesnew)        [above=1.5cm of timesnewanchor]               {$*$};
+    \node[noboundary] (yt)              [above=of softmax]              {$\angless{\hat{y}}{t}$};
+    \draw[thick, -latex] (xt) -| (update_g);
+    \draw[thick, -latex] (xt) -| (relevance_g);
+    \draw[thick, -latex] (xt) -| (tanh_g);
+    \draw[thick, -latex] (ct1) -| node[near end, left, scale=0.7]{$\sigma$} node[near end, right, scale=0.7]{$\makecell{W_u\\b_u}$}(update_g);
+    \draw[thick, -latex] (ct1) -| node[near end, left, scale=0.7]{$\sigma$} node[near end, right, scale=0.7]{$\makecell{W_r\\b_r}$}(relevance_g);
+    \draw[thick, -latex] (ct1) -- (timesnewanchor);
+    \draw[thick, -latex] (update_g.north) |- node[near end, above, scale=0.7]{$\angless{\Gamma_u}{t}$} (timesnew.west);
+    \draw[thick, -latex] (tanh_g.north) |- node[near end, above, scale=0.7]{$\angless{\tilde{c}}{t}$}(timesnew.east);
+    \draw[thick, -latex] (timesnew) -- (ctplus);
+    \draw[thick, -latex] (ctplus) -- (ctout);
+    \draw[thick] (softmaxanchor.center) -- (softmax);  
+    \draw[thick, -latex] (softmax) -- (yt);
+    \draw[thick, -latex] (timesoldanchor.center) -- (timesold);
+    \draw[thick, -latex] (update_g.north) |- node[near end, above, scale=0.7]{$1-\angless{\Gamma_u}{t}$} (timesold.east);
+    \draw[thick, -latex] (timesold.north) |- (ctplus.west);
+    \draw[thick, -latex] (relevance_g) -| node[near end, right, scale=0.7]{$\angless{\Gamma_r}{t}$} (timesnewanchor);
+    \draw[thick, -latex] (timesnewanchor) -| node[near end, left, scale=0.7]{$\tanh$} node[near end, right, scale=0.7]{$\makecell{W_c\\b_c}$}(tanh_g);
+    
+    \draw[thick, red] (1.05, -0.5) rectangle (9.6, 4.3);
+    \draw[thick, green] (1, -0.55) rectangle (10.2, 5.3);
+
+    \end{tikzpicture} 
+  \end{center}
   \begin{align*}
     \angless{\tilde{c}}{t}&=\tanh\left(W_c\left[\Gamma_r\ast \angless{c}{t-1},\angless{x}{t}\right]+b_c\right)\\
     \Gamma_u&=\sigma\left(W_u\left[\angless{c}{t-1},\angless{x}{t}\right]+b_u\right)\\
@@ -422,6 +559,64 @@ Like CNN, RNN suffers from vanishing gradients problem, making it hard for RNN t
   \end{itemize}
 \end{itemize}
 \subsubsection{Long Short Term Memory(LSTM)}
+\begin{center}
+  \begin{tikzpicture}[
+    rect/.style={rectangle, draw=black, thick, minimum size=5mm},
+    gate/.style={rectangle, draw=black, thick, minimum height=9mm, minimum width=1.2cm, align=center, font=\footnotesize},
+    noboundary/.style={rectangle, thick, minimum size=7mm},
+    circ/.style={circle, draw=black, thick, minimum size=7mm},
+    node distance=5mm and 5mm
+  ]
+  \node[noboundary] (at1)                                             {$\angless{a}{t-1}$};
+  \node[noboundary] (at1xt)           [right=of at1]                  {};
+  \node[noboundary] (forget)          [right=1cm of at1xt]            {};
+  \node[noboundary] (update)          [right=1cm of forget]           {};
+  \node[noboundary] (timesnewanchor)  [right=1mm of update]           {};
+  \node[noboundary] (tanh)            [right=1cm of update]           {};
+  \node[noboundary] (output)          [right=1cm of tanh]             {};
+  \node[noboundary] (xt)              [below=of at1xt]                {$\angless{x}{t}$};
+  \node[gate]       (forget_g)        [above=of forget]               {forget\\gate};
+  \node[gate]       (update_g)        [above=of update]               {update\\gate};
+  \node[gate]       (tanh_g)          [above=of tanh]                 {tanh};
+  \node[gate]       (output_g)        [above=of output]               {output\\gate};
+  \node[noboundary] (ct1)             [above=4cm of at1]              {$\angless{c}{t-1}$};
+  \node[circ]       (timesold)        [above=4cm of forget]           {$*$};
+  \node[circ]       (ctplus)          [above=4cm of timesnewanchor]   {+};
+  \node[noboundary] (ctfirst)         [above=4cm of output]           {};
+  \node[noboundary] (ctout)           [right=2.5cm of ctfirst]        {$\angless{c}{t}$};
+  \node[circ]       (timesnew)        [above=2cm of timesnewanchor]   {$*$};
+  \node[circ]       (timesout)        [above=2cm of output]           {$*$};
+  \node[noboundary] (atout)           [right=2.5cm of timesout]       {$\angless{a}{t}$};
+  \node[rect]       (tanhout)         [below=3mm of ctfirst]          {tanh};
+  \node[noboundary] (softmaxanchor)   [right=3mm of timesout]             {};
+  \node[rect]       (softmax)         [above=3cm of softmaxanchor]    {softmax};
+  \node[noboundary] (yt)              [above=of softmax]              {$\angless{\hat{y}}{t}$};
+  \draw[thick, -latex] (xt) -- (at1xt.center);
+  \draw[thick, -latex] (at1) -| node[near end, left, scale=0.7]{$\sigma$} node[near end, right, scale=0.7]{$\makecell{ W_f\\b_f}$}(forget_g);
+  \draw[thick, -latex] (at1) -| node[near end, left, scale=0.7]{$\sigma$} node[near end, right, scale=0.7]{$\makecell{ W_u\\b_u}$}(update_g);
+  \draw[thick, -latex] (at1) -| node[near end, left, scale=0.7]{$\tanh$}  node[near end, right, scale=0.7]{$\makecell{ W_c\\b_c}$}(tanh_g);
+  \draw[thick, -latex] (at1) -| node[near end, left, scale=0.7]{$\sigma$} node[near end, right, scale=0.7]{$\makecell{ W_o\\b_o}$}(output_g);
+  \draw[thick, -latex] (ct1) -- (timesold);
+  \draw[thick, -latex] (forget_g) -- node[near start, left, scale=0.7]{$\angless{\Gamma_f}{t}$}(timesold);
+  \draw[thick, -latex] (timesold) -- (ctplus);
+  \draw[thick, -latex] (update_g.north) |- node[near start, left, scale=0.7]{$\angless{\Gamma_u}{t}$}(timesnew.west);
+  \draw[thick, -latex] (tanh_g.north) |- node[near start, left, scale=0.7]{$\angless{\tilde{c}}{t}$}(timesnew.east);
+  \draw[thick, -latex] (timesnew) -- (ctplus);
+  \draw[thick, -latex] (ctplus) -| (tanhout);
+  \draw[thick, -latex] (ctplus) -- (ctout);
+  \draw[thick, -latex] (tanhout) -- (timesout);
+  \draw[thick, -latex] (output_g) -- node[near start, left, scale=0.7]{$\angless{\Gamma_u}{o}$}(timesout);
+  \draw[thick, -latex] (timesout) -- (atout);
+  \draw[thick] (softmaxanchor.center) -- ($(softmaxanchor.center)+(0, 1.75)$);
+  \draw[thick, dotted] ($(softmaxanchor.center)+(0, 1.75)$) -- ($(softmaxanchor.center)+(0, 2.25)$); 
+  \draw[thick, -latex] ($(softmaxanchor.center)+(0, 2.25)$) -- (softmax);  
+  \draw[thick, -latex] (softmax) -- (yt);
+  
+  \draw[thick, red] (1.05, -0.5) rectangle (9.1, 5.5);
+  \draw[thick, green] (1, -0.55) rectangle (10.2, 6.8);
+  
+  \end{tikzpicture} 
+\end{center}
 \begin{align*}
   \angless{\tilde{c}}{t}&=\tanh\left(W_c\left[\angless{a}{t-1},\angless{x}{t}\right]+b_c\right)\\
   \Gamma_u&=\sigma\left(W_u\left[\angless{a}{t-1},\angless{x}{t}\right]+b_u\right)\\
@@ -842,7 +1037,6 @@ When the sentence to translate is long, it's hard for the encoder network to sto
 }
 \end{tikzpicture} 
 \end{center}
-asaa
 \begin{itemize}
   \item $\angless{\alpha}{t,t'}$ is the amount of attention $\angless{y}{t}$ pays to $\angless{a}{t'}$. It's a softmax combination of factors $\angless{e}{t,t'}$. Obviously $\sum_{t'}\angless{\alpha}{t,t'}=1$ for any given $t$.
   \[
@@ -873,7 +1067,7 @@ asaa
 \begin{itemize}
   \item Speech recognition application transforms an audio clip to the corresponding transcript.
   \item Linguists once believed that breaking audio clips down to ``phonemes'' is the best way to do speech recognition, which has been proved unnecessary by DL.
-  \item CTC (connectionist temporal classification) cost: a many-to-many RNN with equal numbers of input and output units is used to recoginize speech, but usually the input contains much more items than the input (\# input timestamps $\gg$ \# letters in output). CTC cost makes the RNN generate output with repeated letters and a special blank character, e.g. \textit{ttt\_h\_eee\_\_\textvisiblespace\_\_\_qqq\_\_}. Repeated characters not separated by the blank character are collapsed to obtain the actual output, thus the output above is considered a correct prefix of the expected result \textit{the quick brown fox}.
+  \item CTC (connectionist temporal classification) cost: a many-to-many RNN with equal numbers of input and output units is used to recognize speech, but usually the input contains much more items than the input (\# input timestamps $\gg$ \# letters in output). CTC cost makes the RNN generate output with repeated letters and a special blank character, e.g. \textit{ttt\_h\_eee\_\_\textvisiblespace\_\_\_qqq\_\_}. Repeated characters not separated by the blank character are collapsed to obtain the actual output, thus the output above is considered a correct prefix of the expected result \textit{the quick brown fox}.
   \item Trigger word detection: target label is set to 1 right after the trigger word, and 0 elsewhere, which results in an unbalanced training set (\#0 $\gg$ \#1). A practical solution is to output a few 1s instead of a single 1 after the trigger word.
 \end{itemize}
 
